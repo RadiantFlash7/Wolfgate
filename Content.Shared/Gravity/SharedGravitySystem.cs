@@ -43,7 +43,7 @@ public abstract partial class SharedGravitySystem : EntitySystem
     {
         base.Update(frameTime);
         UpdateShake();
-        WFUpdateGravityRefresh(); // WOLFGATE(Performance): batched weightlessness refresh
+        WGUpdateGravityRefresh(); // WOLFGATE(Performance): batched weightlessness refresh
     }
 
     public bool IsWeightless(Entity<GravityAffectedComponent?> entity)
@@ -75,7 +75,7 @@ public abstract partial class SharedGravitySystem : EntitySystem
     /// <param name="entity">The entity we are updating the weightless status of</param>
     public void RefreshWeightless(Entity<GravityAffectedComponent?> entity)
     {
-        if (!_weightlessQuery.Resolve(entity, ref entity.Comp))
+        if (!_weightlessQuery.Resolve(entity, ref entity.Comp, false)) // WOLFGATE: dolls and items lack GravityAffected; no error spam
             return;
 
         UpdateWeightless(entity!);
@@ -89,7 +89,7 @@ public abstract partial class SharedGravitySystem : EntitySystem
     /// <param name="weightless">The weightless value we are trying to change to, helps avoid needless networking</param>
     public void RefreshWeightless(Entity<GravityAffectedComponent?> entity, bool weightless)
     {
-        if (!_weightlessQuery.Resolve(entity, ref entity.Comp))
+        if (!_weightlessQuery.Resolve(entity, ref entity.Comp, false)) // WOLFGATE: dolls and items lack GravityAffected; no error spam
             return;
 
         // Only update if we're changing our weightless status
@@ -175,7 +175,7 @@ public abstract partial class SharedGravitySystem : EntitySystem
     private void OnGravityChange(ref GravityChangedEvent args)
     {
         // WOLFGATE(Performance) START: batch per grid and walk only its entities, not every gravity-affected entity
-        WFQueueGravityRefresh(args.ChangedGridIndex);
+        WGQueueGravityRefresh(args.ChangedGridIndex);
         return;
         // WOLFGATE END
 #pragma warning disable CS0162 // WOLFGATE(Performance): upstream loop kept for merges

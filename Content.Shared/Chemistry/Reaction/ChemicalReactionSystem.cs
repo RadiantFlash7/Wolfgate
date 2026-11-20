@@ -165,6 +165,7 @@ namespace Content.Shared.Chemistry.Reaction
             var solution = comp.Solution;
 
             var energy = reaction.ConserveEnergy ? solution.GetThermalEnergy(_prototypeManager) : 0;
+            var wgGrade = WGReactionGrade(solution, reaction); // WOLFGATE(WolfChem): read before the reactants go
 
             //Remove reactants
             foreach (var reactant in reaction.Reactants)
@@ -182,6 +183,7 @@ namespace Content.Shared.Chemistry.Reaction
             {
                 products.Add(product.Key);
                 solution.AddReagent(product.Key, product.Value * unitReactions);
+                WGGradeProduct(solution, product.Key, product.Value * unitReactions, wgGrade); // WOLFGATE(WolfChem): the product takes the reaction's grade
             }
 
             if (reaction.ConserveEnergy)
@@ -285,7 +287,10 @@ namespace Content.Shared.Chemistry.Reaction
                     return;
             }
 
-            Log.Error($"{nameof(Solution)} {soln.Owner} could not finish reacting in under {MaxReactionIterations} loops.");
+            // WOLFGATE(LiveFixes) START: name the entity and reagents, since the old message can't identify the reaction loop
+            // Log.Error($"{nameof(Solution)} {soln.Owner} could not finish reacting in under {MaxReactionIterations} loops.");
+            Log.Error($"{nameof(Solution)} {ToPrettyString(soln.Owner)} could not finish reacting in under {MaxReactionIterations} loops. Contents: {soln.Comp.Solution}");
+            // WOLFGATE END
         }
     }
 

@@ -1,8 +1,10 @@
 using Content.Server.Body.Components;
+using Content.Server._WG.Wolfmed.Medical; // WOLFGATE(Wolfmed)
 using Content.Shared.Chemistry.EntitySystems;
 using Content.Shared.Body.Organ;
 using Content.Shared.Chemistry.Components;
 using Content.Shared.Chemistry.Components.SolutionManager;
+using Content.Shared.Chemistry.Reaction; // WOLFGATE(Wolfmed)
 using Robust.Shared.Timing;
 using Robust.Shared.Utility;
 
@@ -11,8 +13,10 @@ namespace Content.Server.Body.Systems
     public sealed partial class StomachSystem : EntitySystem
     {
         [Dependency] private IGameTiming _gameTiming = default!;
+        [Dependency] private Content.Server._WG.Dormancy.WGDormancySystem _wgDormancy = default!; // WOLFGATE(Dormancy): skips NPC bodies nobody is near
         [Dependency] private SharedSolutionContainerSystem _solutionContainerSystem = default!;
-        [Dependency] private Content.Server._WF.Wolfmed.Medical.WolfmedOralAbsorptionSystem _wolfmedAbsorption = default!; // WOLFGATE(Wolfmed): playtest 1
+        [Dependency] private Robust.Shared.Random.IRobustRandom _wgRandom = default!; // WOLFGATE(Wolfmed): spreads first updates
+        [Dependency] private Content.Server._WG.Wolfmed.Medical.WolfmedOralAbsorptionSystem _wolfmedAbsorption = default!; // WOLFGATE(Wolfmed): playtest 1
 
         public const string DefaultSolutionName = "stomach";
 
@@ -21,11 +25,22 @@ namespace Content.Server.Body.Systems
             SubscribeLocalEvent<StomachComponent, MapInitEvent>(OnMapInit);
             SubscribeLocalEvent<StomachComponent, EntityUnpausedEvent>(OnUnpaused);
             SubscribeLocalEvent<StomachComponent, ApplyMetabolicMultiplierEvent>(OnApplyMetabolicMultiplier);
+            SubscribeLocalEvent<StomachComponent, SolutionRelayEvent<ReactionAttemptEvent>>(OnReactionAttempt); // WOLFGATE(Wolfmed): salted food and water must not form saline
         }
+
+        // WOLFGATE(Wolfmed) START: salted food and water must not form saline
+        private void OnReactionAttempt(Entity<StomachComponent> ent, ref SolutionRelayEvent<ReactionAttemptEvent> args)
+        {
+            if (args.Name == DefaultSolutionName && WolfmedOralAbsorptionSystem.BlockedInBody(args.Event.Reaction))
+                args.Event.Cancelled = true;
+        }
+        // WOLFGATE END
 
         private void OnMapInit(Entity<StomachComponent> ent, ref MapInitEvent args)
         {
-            ent.Comp.NextUpdate = _gameTiming.CurTime + ent.Comp.UpdateInterval;
+            // WOLFGATE(Wolfmed): a random first update spreads stomachs spawned together over the interval.
+            // ent.Comp.NextUpdate = _gameTiming.CurTime + ent.Comp.UpdateInterval;
+            ent.Comp.NextUpdate = _gameTiming.CurTime + ent.Comp.UpdateInterval * _wgRandom.NextDouble();
         }
 
         private void OnUnpaused(Entity<StomachComponent> ent, ref EntityUnpausedEvent args)
@@ -42,15 +57,22 @@ namespace Content.Server.Body.Systems
                     continue;
 
                 stomach.NextUpdate += stomach.UpdateInterval;
+                if (_wgDormancy.BodySleeps(uid)) continue; // WOLFGATE(Dormancy): an NPC body no player is near on a planet skips its upkeep
 
                 // Get our solutions
                 if (!_solutionContainerSystem.ResolveSolution((uid, sol), DefaultSolutionName, ref stomach.Solution, out var stomachSolution))
+                    continue;
+
+                // WOLFGATE(Wolfmed): an empty stomach with nothing digesting has nothing to move.
+                if (stomach.ReagentDeltas.Count == 0 && stomachSolution.Contents.Count == 0)
                     continue;
 
                 if (organ.Body is not { } body || !_solutionContainerSystem.TryGetSolution(body, stomach.BodySolutionName, out var bodySolution))
                     continue;
 
                 var transferSolution = new Solution();
+
+                _wolfmedAbsorption.TrackUntracked(stomach, stomachSolution); // WOLFGATE(Wolfmed): reaction products were stuck in the stomach for good
 
                 var queue = new RemQueue<StomachComponent.ReagentDelta>();
                 foreach (var delta in stomach.ReagentDeltas)
@@ -63,8 +85,12 @@ namespace Content.Server.Body.Systems
                             if (reagent.Quantity > delta.ReagentQuantity.Quantity)
                                 reagent = new(reagent.Reagent, delta.ReagentQuantity.Quantity);
 
+                            var wgGrade = stomachSolution.GetPurity(reagent.Reagent.Prototype); // WOLFGATE(WolfChem): read before the removal prunes it
                             stomachSolution.RemoveReagent(reagent);
-                            transferSolution.AddReagent(reagent);
+                            // WOLFGATE(WolfChem) START: a digested reagent keeps its grade
+                            // transferSolution.AddReagent(reagent);
+                            transferSolution.AddReagent(reagent.Reagent, reagent.Quantity, wgGrade);
+                            // WOLFGATE END
                         }
 
                         queue.Add(delta);

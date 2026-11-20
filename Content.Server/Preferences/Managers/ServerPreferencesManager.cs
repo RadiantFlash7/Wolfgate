@@ -138,14 +138,16 @@ namespace Content.Server.Preferences.Managers
 
             // WOLFGATE(Genitals) START: an unreadable anatomy column is kept only if the server loaded it that way
             // It must be unchanged from the stored one; a client's LoadFailed flag alone keeps nothing.
-            if (profile is HumanoidCharacterProfile { Genitals.LoadFailed: true } wfProfile
-                && !(curPrefs.Characters.TryGetValue(slot, out var wfOld)
-                     && wfOld is HumanoidCharacterProfile { Genitals.LoadFailed: true } wfOldProfile
-                     && wfOldProfile.Genitals.MemberwiseEquals(wfProfile.Genitals)))
+            if (profile is HumanoidCharacterProfile { Genitals.LoadFailed: true } wgProfile
+                && !(curPrefs.Characters.TryGetValue(slot, out var wgOld)
+                     && wgOld is HumanoidCharacterProfile { Genitals.LoadFailed: true } wgOldProfile
+                     && wgOldProfile.Genitals.MemberwiseEquals(wgProfile.Genitals)))
             {
-                profile = wfProfile.WithGenitals(wfProfile.Genitals.WithoutLoadFailed());
+                profile = wgProfile.WithGenitals(wgProfile.Genitals.WithoutLoadFailed());
             }
             // WOLFGATE END
+
+            var wgSentBalance = (profile as HumanoidCharacterProfile)?.BankBalance; // WOLFGATE(Augments): the balance the client last saw, to tell a stale copy
 
             // Mono
             if (!authoritative && profile is HumanoidCharacterProfile humanoid)
@@ -159,6 +161,16 @@ namespace Content.Server.Preferences.Managers
                         .WithBankBalance(HumanoidCharacterProfile.DefaultBalance)
                         .WithPersistentData([], [], []); // Mono
             }
+
+            // WOLFGATE(Augments) START: a client save can't unlock augments; new priced ones are bought from the bank here
+            var wgAugmentsSettled = false;
+            if (!authoritative && profile is HumanoidCharacterProfile wgAugmented)
+            {
+                wgAugmentsSettled = SettleAugments(userId, slot, ref wgAugmented,
+                    curPrefs.Characters.GetValueOrDefault(slot) as HumanoidCharacterProfile, wgSentBalance);
+                profile = wgAugmented;
+            }
+            // WOLFGATE END
 
             var profiles = new Dictionary<int, ICharacterProfile>(curPrefs.Characters)
 
@@ -174,6 +186,10 @@ namespace Content.Server.Preferences.Managers
 
             if (ShouldStorePrefs(session.Channel.AuthType))
                 await _db.SaveCharacterSlotAsync(userId, profile, slot);
+
+            // WOLFGATE(Augments): the creator shows the balance, unlocks and dropped augments the save left
+            if (wgAugmentsSettled)
+                ResendPreferences(userId, prefsData.Prefs);
         }
 
         private async void HandleDeleteCharacterMessage(MsgDeleteCharacter message)
@@ -370,6 +386,12 @@ namespace Content.Server.Preferences.Managers
             async Task LoadPrefs()
             {
                 var prefs = await _db.GetPlayerPreferencesAsync(session.UserId, cancel);
+
+                // WOLFGATE START: a player who left during the read, or hasn't loaded yet, has no play time to validate against
+                // Nothing awaits this task, so the throw only ever reached the log. FinishLoad sends prefs when they do load.
+                if (!_dependencies.Resolve<Content.Server.Players.PlayTimeTracking.PlayTimeTrackingManager>().TryGetTrackerTimes(session, out _))
+                    return;
+                // WOLFGATE END
 
                 if (prefs != null)
                 {

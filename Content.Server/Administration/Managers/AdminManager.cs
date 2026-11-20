@@ -337,6 +337,8 @@ namespace Content.Server.Administration.Managers
                     .Select(p => p.Key));
             }
 
+            commands.AddRange(WGToolshedCommandsFor(adminData?.Data)); // WOLFGATE(Administration): the client refuses a command missing from this list
+
             msg.AvailableCommands = commands.ToArray();
 
             _netMgr.ServerSendMessage(msg, session.Channel);

@@ -64,6 +64,8 @@ namespace Content.Server.Atmos.EntitySystems
             _equalizeTiles[0] = tile;
             tile.MonstermosInfo.LastQueueCycle = queueCycle;
             var tileCount = 1;
+            // WOLFGATE(Performance): without space nothing past the equalize limit is ever used, so stop the search there
+            var searchLimit = WGMonstermosSearchLimit(ent.Comp4);
             for (var i = 0; i < tileCount; i++)
             {
                 if (i > Atmospherics.MonstermosHardTileLimit) break;
@@ -83,6 +85,7 @@ namespace Content.Server.Atmos.EntitySystems
                     if (!exploring.AdjacentBits.IsFlagSet(direction)) continue;
                     var adj = exploring.AdjacentTiles[j];
                     if (adj?.Air == null) continue;
+                    if (searchLimit < Atmospherics.MonstermosHardTileLimit && tileCount >= searchLimit && adj.MonstermosInfo.LastQueueCycle != queueCycle) break; // WOLFGATE(Performance): search limit reached
                     if(adj.MonstermosInfo.LastQueueCycle == queueCycle) continue;
                     adj.MonstermosInfo = new MonstermosInfo {LastQueueCycle = queueCycle};
 
@@ -93,12 +96,18 @@ namespace Content.Server.Atmos.EntitySystems
                     {
                         // Looks like someone opened an airlock to space!
 
-                        ExplosivelyDepressurize(ent, tile, cycleNum);
+                        // WOLFGATE(Performance) START: a room refilling into a hole vents from the same tile forever; let it leak quietly
+                        if (!WGBreachLooping(ent.Owner, tile))
+                            ExplosivelyDepressurize(ent, tile, cycleNum);
+                        else
+                            WGMarkEqualized(tileCount, cycleNum);
+                        // WOLFGATE END
                         return;
                     }
                 }
             }
 
+            var wgExplored = tileCount; // WOLFGATE(Performance): used range for the cleanup below
             if (tileCount > Atmospherics.MonstermosTileLimit)
             {
                 for (var i = Atmospherics.MonstermosTileLimit; i < tileCount; i++)
@@ -364,10 +373,12 @@ namespace Content.Server.Atmos.EntitySystems
             }
 
             // We do cleanup.
-            Array.Clear(_equalizeTiles, 0, Atmospherics.MonstermosHardTileLimit);
-            Array.Clear(_equalizeGiverTiles, 0, Atmospherics.MonstermosTileLimit);
-            Array.Clear(_equalizeTakerTiles, 0, Atmospherics.MonstermosTileLimit);
-            Array.Clear(_equalizeQueue, 0, Atmospherics.MonstermosTileLimit);
+            // WOLFGATE(Performance) START: clear only the range this run used
+            Array.Clear(_equalizeTiles, 0, wgExplored);
+            Array.Clear(_equalizeGiverTiles, 0, tileCount);
+            Array.Clear(_equalizeTakerTiles, 0, tileCount);
+            Array.Clear(_equalizeQueue, 0, tileCount);
+            // WOLFGATE END
         }
 
         private void ExplosivelyDepressurize(

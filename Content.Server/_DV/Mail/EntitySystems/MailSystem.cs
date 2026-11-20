@@ -646,7 +646,11 @@ namespace Content.Server._DV.Mail.EntitySystems
                     idCard.Comp.JobIcon,
                     accessTags,
                     true, // Frontier: all recipients can receive priority mail
-                    stationName); // Frontier: add stationName
+                    // WOLFGATE(MeridianTraits) START: the recipient's body, so quirks can add mail goodies
+                    // stationName); // Frontier: add stationName
+                    stationName, // Frontier: add stationName
+                    receiverUid);
+                    // WOLFGATE END
 
                 return true;
             }
@@ -758,6 +762,14 @@ namespace Content.Server._DV.Mail.EntitySystems
                         .ToDictionary(pair => pair.Key, pair => pair.First().Value);
                 }
 
+                // WOLFGATE(MeridianTraits) START: quirks add their own mail goodies
+                if (candidate.WgOwner is { } wgOwner)
+                {
+                    var wgGoodies = new Content.Server._WG.MeridianTraits.WGMailGoodiesEvent(possibleParcels);
+                    RaiseLocalEvent(wgOwner, ref wgGoodies);
+                }
+                // WOLFGATE END
+
                 var accumulated = 0f;
                 var randomPoint = _random.NextFloat(possibleParcels.Values.Sum());
                 string? chosenParcel = null;
@@ -854,7 +866,11 @@ namespace Content.Server._DV.Mail.EntitySystems
         string jobIcon,
         HashSet<ProtoId<AccessLevelPrototype>> accessTags,
         bool mayReceivePriorityMail,
-        string ship) // Frontier: add ship
+        // WOLFGATE(MeridianTraits) START: the recipient's body, so quirks can add mail goodies
+        // string ship) // Frontier: add ship
+        string ship, // Frontier: add ship
+        EntityUid? wgOwner = null)
+        // WOLFGATE END
     {
         public readonly string Name = name;
         public readonly string Job = job;
@@ -862,5 +878,6 @@ namespace Content.Server._DV.Mail.EntitySystems
         public readonly HashSet<ProtoId<AccessLevelPrototype>> AccessTags = accessTags;
         public readonly bool MayReceivePriorityMail = mayReceivePriorityMail;
         public readonly string Ship = ship; // Frontier
+        public readonly EntityUid? WgOwner = wgOwner; // WOLFGATE(MeridianTraits): the recipient's body, for quirk mail goodies
     }
 }

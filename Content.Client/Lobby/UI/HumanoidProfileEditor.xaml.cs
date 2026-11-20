@@ -1,14 +1,84 @@
+// WOLFGATE: restore the licence header removed by Kill Spdx
+// SPDX-FileCopyrightText: 2020 20kdc
+// SPDX-FileCopyrightText: 2020 DamianX
+// SPDX-FileCopyrightText: 2020 Exp
+// SPDX-FileCopyrightText: 2020 ike709
+// SPDX-FileCopyrightText: 2021 Acruid
+// SPDX-FileCopyrightText: 2021 Galactic Chimp
+// SPDX-FileCopyrightText: 2021 Metal Gear Sloth
+// SPDX-FileCopyrightText: 2021 Pancake
+// SPDX-FileCopyrightText: 2021 RemberBL
+// SPDX-FileCopyrightText: 2021 Remie Richards
+// SPDX-FileCopyrightText: 2021 Swept
+// SPDX-FileCopyrightText: 2021 Vera Aguilera Puerto
+// SPDX-FileCopyrightText: 2021 bgare89
+// SPDX-FileCopyrightText: 2022 Alex Evgrashin
+// SPDX-FileCopyrightText: 2022 CommieFlowers
+// SPDX-FileCopyrightText: 2022 DrSmugleaf
+// SPDX-FileCopyrightText: 2022 EmoGarbage404
+// SPDX-FileCopyrightText: 2022 Flipp Syder
+// SPDX-FileCopyrightText: 2022 Jezithyr
+// SPDX-FileCopyrightText: 2022 Leeroy
+// SPDX-FileCopyrightText: 2022 Moony
+// SPDX-FileCopyrightText: 2022 Morber
+// SPDX-FileCopyrightText: 2022 Rane
+// SPDX-FileCopyrightText: 2022 S1ss3l
+// SPDX-FileCopyrightText: 2022 Veritius
+// SPDX-FileCopyrightText: 2022 metalgearsloth
+// SPDX-FileCopyrightText: 2022 mirrorcult
+// SPDX-FileCopyrightText: 2022 rolfero
+// SPDX-FileCopyrightText: 2022 wrexbe
+// SPDX-FileCopyrightText: 2023 ElectroJr
+// SPDX-FileCopyrightText: 2023 James Simonson
+// SPDX-FileCopyrightText: 2023 Morb
+// SPDX-FileCopyrightText: 2023 PrPleGoo
+// SPDX-FileCopyrightText: 2023 Ray
+// SPDX-FileCopyrightText: 2023 Visne
+// SPDX-FileCopyrightText: 2023 Ygg01
+// SPDX-FileCopyrightText: 2023 csqrb
+// SPDX-FileCopyrightText: 2023 deltanedas
+// SPDX-FileCopyrightText: 2024 AJCM-git
+// SPDX-FileCopyrightText: 2024 Checkraze
+// SPDX-FileCopyrightText: 2024 Ciac32
+// SPDX-FileCopyrightText: 2024 Dvir
+// SPDX-FileCopyrightText: 2024 Ed
+// SPDX-FileCopyrightText: 2024 ErhardSteinhauer
+// SPDX-FileCopyrightText: 2024 Errant
+// SPDX-FileCopyrightText: 2024 Kot
+// SPDX-FileCopyrightText: 2024 Krunklehorn
+// SPDX-FileCopyrightText: 2024 Leon Friedrich
+// SPDX-FileCopyrightText: 2024 Pieter-Jan Briers
+// SPDX-FileCopyrightText: 2024 Tornado Tech
+// SPDX-FileCopyrightText: 2024 Vasilis
+// SPDX-FileCopyrightText: 2024 Whatstone
+// SPDX-FileCopyrightText: 2024 Winkarst-cpu
+// SPDX-FileCopyrightText: 2024 dffdff2423
+// SPDX-FileCopyrightText: 2024 eoineoineoin
+// SPDX-FileCopyrightText: 2025 Archylle
+// SPDX-FileCopyrightText: 2025 Ark
+// SPDX-FileCopyrightText: 2025 HacksLua
+// SPDX-FileCopyrightText: 2025 Ignaz "Ian" Kraft
+// SPDX-FileCopyrightText: 2025 LukeZurg22
+// SPDX-FileCopyrightText: 2025 Mora
+// SPDX-FileCopyrightText: 2025 Redrover1760
+// SPDX-FileCopyrightText: 2025 ark1368
+// SPDX-FileCopyrightText: 2025 inquisitor-star
+// SPDX-FileCopyrightText: 2025 starch
+//
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 using System.IO;
 using System.Linq;
 using System.Numerics;
 using Content.Client.Humanoid;
-using Content.Client._WF.Genitals; // WOLFGATE(Genitals)
-using Content.Client._WF.Genitals.UI; // WOLFGATE(Genitals)
-using Content.Client._WF.Humanoid; // WOLFGATE(Humanoid)
-using Content.Shared._WF.Genitals; // WOLFGATE(Genitals)
-using Content.Shared._WF.Genitals.Profile; // WOLFGATE(Genitals)
-using Content.Shared._WF.Biotype; // WOLFGATE(Biotype)
-using Content.Shared._WF.Species; // WOLFGATE(Species)
+using Content.Client._WG.Genitals; // WOLFGATE(Genitals)
+using Content.Client._WG.Genitals.UI; // WOLFGATE(Genitals)
+using Content.Client._WG.Humanoid; // WOLFGATE(Humanoid)
+using Content.Client._WG.Traits; // WOLFGATE(Traits)
+using Content.Shared._WG.Genitals; // WOLFGATE(Genitals)
+using Content.Shared._WG.Genitals.Profile; // WOLFGATE(Genitals)
+using Content.Shared._WG.Biotype; // WOLFGATE(Biotype)
+using Content.Shared._WG.Species; // WOLFGATE(Species)
 using Content.Client.Lobby.UI.Loadouts;
 using Content.Client.Lobby.UI.Roles;
 using Content.Client.Message;
@@ -16,7 +86,7 @@ using Content.Client.Players.PlayTimeTracking;
 using Content.Client.Sprite;
 using Content.Client.UserInterface.Systems.Guidebook;
 using Content.Client.UserInterface.Controls;
-using Content.Client._WF.UserInterface.Controls; // WOLFGATE(UserInterface)
+using Content.Client._WG.UserInterface.Controls; // WOLFGATE(UserInterface)
 using Content.Shared._Mono.Persistence; // Mono
 using Content.Shared._Mono.Company;
 using Content.Shared.CCVar;
@@ -46,7 +116,7 @@ using Robust.Shared.Prototypes;
 using Robust.Shared.Utility;
 using Direction = Robust.Shared.Maths.Direction;
 using Content.Client._Mono.Company;
-using LoadoutWindow = Content.Client._WF.Loadouts.WolfgateLoadoutWindow; // WOLFGATE(Loadouts): the editor opens the Wolfgate loadout window in place of the stock one
+using LoadoutWindow = Content.Client._WG.Loadouts.WolfgateLoadoutWindow; // WOLFGATE(Loadouts): the editor opens the Wolfgate loadout window in place of the stock one
 
 namespace Content.Client.Lobby.UI
 {
@@ -224,7 +294,7 @@ namespace Content.Client.Lobby.UI
 
             #region Appearance
 
-            TabContainer.SetTabTitle(0, Loc.GetString("wf-creator-species-tab")); // WOLFGATE(Humanoid)
+            TabContainer.SetTabTitle(0, Loc.GetString("wg-creator-species-tab")); // WOLFGATE(Humanoid)
             TabContainer.SetTabTitle(1, Loc.GetString("humanoid-profile-editor-appearance-tab")); // WOLFGATE(Humanoid): shifted by the species tab
 
             #region Sex
@@ -260,6 +330,8 @@ namespace Content.Client.Lobby.UI
             // WOLFGATE END
 
             InitializeEmoteVoices(); // WOLFGATE(EmoteVoices)
+            InitializeSpeechVoice(); // WOLFGATE(Voice)
+            InitializeCombatMusic(); // WOLFGATE(CombatMusic)
             InitializeSizePercent(); // WOLFGATE(Humanoid): typed percentages for height and width
             InitializeBloodColour(); // WOLFGATE(BloodColour)
 
@@ -524,6 +596,16 @@ namespace Content.Client.Lobby.UI
 
             RefreshTraits();
 
+            // WOLFGATE(Traits) START: the card-based editor owns trait selection
+            TraitsTab.ProfileSource = () => Profile;
+            TraitsTab.OnProfileChanged += profile =>
+            {
+                Profile = profile;
+                SetDirty();
+                UpdateAugments(); // WOLFGATE(Augments): a trait with its own limbs claims those slots
+            };
+            // WOLFGATE END
+
             #region Company
 
             TabContainer.SetTabTitle(4, Loc.GetString("humanoid-profile-editor-company-tab")); // WOLFGATE(Humanoid): shifted by the species tab
@@ -603,7 +685,7 @@ namespace Content.Client.Lobby.UI
             #endregion Markings
 
             // WOLFGATE(Genitals) START: anatomy tab, found by position so a tab added or moved upstream cannot shift it
-            TabContainer.SetTabTitle(GenitalsTab.GetPositionInParent(), Loc.GetString("wf-genitals-tab"));
+            TabContainer.SetTabTitle(GenitalsTab.GetPositionInParent(), Loc.GetString("wg-genitals-tab"));
             GenitalEditor.OnProfileChanged += genitals =>
             {
                 Profile = Profile?.WithGenitals(genitals);
@@ -618,11 +700,13 @@ namespace Content.Client.Lobby.UI
             RefreshFlavorText();
             InitializeHeadshot(); // WOLFGATE(Headshot)
             InitializeCustomMarkings(); // WOLFGATE(CustomMarkings)
+            InitializeCompanyCard(); // WOLFGATE(Companies)
             InitializeMismatchedParts(); // WOLFGATE(Species)
             InitializeBiotype(); // WOLFGATE(Biotype)
             InitializeChatFont(); // WOLFGATE(ChatFont)
             InitializeTypingBubble(); // WOLFGATE(TypingBubble)
             InitializeLegStyle(); // WOLFGATE(LegStyle)
+            InitializeAugments(); // WOLFGATE(Augments)
 
             #region Dummy
 
@@ -697,8 +781,17 @@ namespace Content.Client.Lobby.UI
 
             EnforceSpeciesTraitRestrictions();
 
+            // WOLFGATE(Traits) START: keep the card-based editor in step with the profile
+            TraitsTab.SetProfile(Profile);
+            // WOLFGATE END
+
             var traits = _prototypeManager.EnumeratePrototypes<TraitPrototype>().OrderBy(t => Loc.GetString(t.Name)).ToList();
             TabContainer.SetTabTitle(3, Loc.GetString("humanoid-profile-editor-traits-tab")); // WOLFGATE(Humanoid): shifted by the species tab
+
+            // WOLFGATE(Traits) START: the flat list is hidden behind the card-based editor, so don't build it
+            if (TraitsList.Parent is { Visible: false })
+                return;
+            // WOLFGATE END
 
             if (traits.Count < 1)
             {
@@ -856,7 +949,7 @@ namespace Content.Client.Lobby.UI
                         // WOLFGATE END
 
                         if (trait.NewbieBlocked) // WOLFGATE(Newbie): say why a newbie's saved pick won't apply
-                            tooltipParts.Add(Loc.GetString("wf-newbie-trait-blocked"));
+                            tooltipParts.Add(Loc.GetString("wg-newbie-trait-blocked"));
 
                         if (tooltipParts.Count > 0)
                             selector.SetTooltip(string.Join("\n", tooltipParts));
@@ -907,6 +1000,7 @@ namespace Content.Client.Lobby.UI
                         }
 
                         SetDirty();
+                        UpdateAugments(); // WOLFGATE(Augments): a trait with its own limbs takes those slots
 
                         UpdateTraitIncompatibilityVisibility(allSelectors);
 
@@ -1101,10 +1195,10 @@ namespace Content.Client.Lobby.UI
                 }
 
                 // WOLFGATE(Biotype): a biotype the trait lists hides it like a listed species
-                if (!hide && Profile != null && WFBiotypeGates.TraitBlocked(thisProto, Profile, _prototypeManager))
+                if (!hide && Profile != null && WGBiotypeGates.TraitBlocked(thisProto, Profile, _prototypeManager))
                     hide = true;
 
-                if (!hide && WfNewbieTraitBlocked(thisProto)) // WOLFGATE(Newbie): new players can't take kill-target traits
+                if (!hide && WgNewbieTraitBlocked(thisProto)) // WOLFGATE(Newbie): new players can't take kill-target traits
                     hide = true;
 
                 if (!hide)
@@ -1337,9 +1431,11 @@ namespace Content.Client.Lobby.UI
             UpdateFlavorTextEdit();
             UpdateHeadshot(); // WOLFGATE(Headshot)
             UpdateCustomMarkings(); // WOLFGATE(CustomMarkings)
+            UpdateCompanyCard(); // WOLFGATE(Companies)
             UpdateMismatchedParts(); // WOLFGATE(Species)
             UpdateBiotype(); // WOLFGATE(Biotype)
             UpdateLegStyle(); // WOLFGATE(LegStyle)
+            UpdateAugments(); // WOLFGATE(Augments)
             UpdateChatFont(); // WOLFGATE(ChatFont)
             UpdateTypingBubble(); // WOLFGATE(TypingBubble)
             UpdateSexControls();
@@ -1351,6 +1447,8 @@ namespace Content.Client.Lobby.UI
             UpdateAgeEdit();
             UpdateEyePickers();
             UpdateEmoteVoiceControls(); // WOLFGATE(EmoteVoices)
+            UpdateSpeechVoiceControls(); // WOLFGATE(Voice)
+            UpdateCombatMusicControls(); // WOLFGATE(CombatMusic)
             UpdateBloodColour(); // WOLFGATE(BloodColour)
             UpdateSaveButton();
             UpdateMarkings();
@@ -1748,7 +1846,7 @@ namespace Content.Client.Lobby.UI
             // WOLFGATE(Gags) START: colours picked for a recolourable item
             _loadoutWindow.OnLoadoutColorsChanged += (loadoutGroup, loadoutProto, colors) =>
             {
-                roleLoadout.SetWFGagsColors(loadoutGroup, loadoutProto, colors);
+                roleLoadout.SetWGGagsColors(loadoutGroup, loadoutProto, colors);
                 _loadoutWindow.RefreshLoadouts(roleLoadout, session, collection);
                 Profile = Profile?.WithLoadout(roleLoadout);
                 ReloadPreview();
@@ -1811,7 +1909,7 @@ namespace Content.Client.Lobby.UI
         private void UpdateDescriptionStatus(string content)
         {
             var max = HumanoidCharacterProfile.MaxDescLength;
-            DescriptionCounter.Text = Loc.GetString("wf-creator-description-counter",
+            DescriptionCounter.Text = Loc.GetString("wg-creator-description-counter",
                 ("count", content.Length), ("max", max));
             SetDangerClass(DescriptionCounter, content.Length > max);
 
@@ -1822,11 +1920,11 @@ namespace Content.Client.Lobby.UI
                 return;
 
             DescriptionWarning.Text = Loc.GetString(tooLong
-                ? "wf-creator-description-too-long"
-                : "wf-creator-description-brackets");
+                ? "wg-creator-description-too-long"
+                : "wg-creator-description-brackets");
             DescriptionWarning.ToolTip = Loc.GetString(tooLong
-                ? "wf-creator-description-too-long-tooltip"
-                : "wf-creator-description-brackets-tooltip", ("max", max));
+                ? "wg-creator-description-too-long-tooltip"
+                : "wg-creator-description-brackets-tooltip", ("max", max));
         }
 
         /// <summary>Toggles the Danger style class without disturbing the control's other classes.</summary>
@@ -1964,6 +2062,7 @@ namespace Content.Client.Lobby.UI
             _anatomySaveConfirm = null;
             // WOLFGATE END
             CloseHeadshotWindow(); // WOLFGATE(Headshot)
+            DisposeCombatMusic(); // WOLFGATE(CombatMusic): stop any preview
             CloseCustomMarkings(); // WOLFGATE(CustomMarkings)
 
             // Mono start
@@ -2028,9 +2127,10 @@ namespace Content.Client.Lobby.UI
         private void SetSpecies(string newSpecies)
         {
             Profile = Profile?.WithSpecies(newSpecies);
-            Profile = Profile?.WithBiotype(WFBiotype.Default); // WOLFGATE(Biotype): a new species starts on its own biotype
+            Profile = Profile?.WithBiotype(WGBiotype.Default); // WOLFGATE(Biotype): a new species starts on its own biotype
             UpdateBiotype(); // WOLFGATE(Biotype)
             UpdateLegStyle(); // WOLFGATE(LegStyle): legs the new species lacks fall back to its own
+            UpdateAugments(); // WOLFGATE(Augments): augments the new species can't take are dropped
             UpdateTypingBubble(); // WOLFGATE(TypingBubble): the species' own bubble changes with it
             // WOLFGATE(Humanoid) START: keep the species picker and dropdown in step, drop hair the new species lacks
             EnforceSpeciesHair();
@@ -2105,8 +2205,12 @@ namespace Content.Client.Lobby.UI
                 if (!_prototypeManager.TryIndex(traitId, out TraitPrototype? trait))
                     continue;
 
-                if (trait.SpeciesBlacklist.Contains(species) || WFBiotypeGates.TraitBlocked(trait, Profile, _prototypeManager)) // WOLFGATE(Biotype): a listed biotype drops the trait like a listed species
+                if (trait.SpeciesBlacklist.Contains(species) || WGBiotypeGates.TraitBlocked(trait, Profile, _prototypeManager)) // WOLFGATE(Biotype): a listed biotype drops the trait like a listed species
                     toRemove.Add(traitId);
+                // WOLFGATE(Traits) START: a saved trait the character's conditions no longer allow is dropped
+                else if (!TraitConditionUi.AllMet(trait, species.Id, _prototypeManager))
+                    toRemove.Add(traitId);
+                // WOLFGATE END
             }
 
             foreach (var traitId in toRemove)

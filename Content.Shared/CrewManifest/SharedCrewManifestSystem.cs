@@ -26,9 +26,9 @@ public sealed class CrewManifestEuiState : EuiStateBase
     public string StationName { get; }
     public CrewManifestEntries? Entries { get; }
 
-    public CrewManifestEuiState(string stationName, CrewManifestEntries? entries)
+    public CrewManifestEuiState(CrewManifestEntries? entries) // Monolith: Remove name
     {
-        StationName = stationName;
+        StationName = "Crew Manifest"; // Monolith: Remove name
         Entries = entries;
     }
 }
@@ -53,6 +53,8 @@ public sealed class CrewManifestEntry
     public string JobIcon { get; }
 
     public string JobPrototype { get; }
+
+    public int WGCompanyRank { get; init; } // WOLFGATE(Companies): rank whose custom icon replaces JobIcon
 
     public CrewManifestEntry(string name, string jobTitle, string jobIcon, string jobPrototype)
     {

@@ -28,10 +28,11 @@ using Content.Shared.Weapons.Ranged.Components;
 using Content.Shared.Weapons.Ranged.Events;
 using Content.Shared.Whitelist;
 using Content.Shared._RMC14.Weapons.Ranged.Prediction;
-using Content.Shared._WF.Tether.Harpoon; // WOLFGATE(Tether): manned turret gun relay
+using Content.Shared._WG.Modsuits.Modules; // WOLFGATE(Modsuits)
+using Content.Shared._WG.Tether.Harpoon; // WOLFGATE(Tether): manned turret gun relay
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Inventory;
-using GunUseGunOriginComponent = Content.Shared._WF.Vehicles.Weapons.GunUseGunOriginComponent; // WOLFGATE(Vehicles)
+using GunUseGunOriginComponent = Content.Shared._WG.Vehicles.Weapons.GunUseGunOriginComponent; // WOLFGATE(Vehicles)
 using Content.Shared.Weapons.Hitscan.Events;
 using Robust.Shared.Audio;
 using Robust.Shared.Audio.Systems;
@@ -159,7 +160,7 @@ public abstract partial class SharedGunSystem : EntitySystem
     {
         // WOLFGATE(Weapons) START: one path for both sides that links predicted projectiles
         // ShootRequested (with the mech and Goob burst-target handling that used to live here) is in
-        // _WF/Weapons/Ranged/Systems/SharedGunSystem.Prediction.cs. The client already fired this shot from
+        // _WG/Weapons/Ranged/Systems/SharedGunSystem.Prediction.cs. The client already fired this shot from
         // GunSystem.Update on its first-time tick, so it only replays it here.
         // upstream original, kept for merges (OnShootRequest body, then the ShootRequested method after it):
         // var user = args.SenderSession.AttachedEntity;
@@ -554,6 +555,7 @@ public abstract partial class SharedGunSystem : EntitySystem
         if (gun.SelectedMode == SelectiveFire.Burst)
         {
             gun.BurstActivated = true;
+            OnBurstActivated(gunUid); // WOLFGATE(Performance): lets the server track bursting guns
         }
         if (gun.BurstActivated)
         {
@@ -629,6 +631,14 @@ public abstract partial class SharedGunSystem : EntitySystem
         projectile.Weapon = gunUid;
 
         TransformSystem.SetWorldRotation(uid, direction.ToWorldAngle() + projectile.Angle);
+
+        // WOLFGATE(Modsuits) START: the shooting assistant module reacts to player-fired projectiles.
+        if (user is { } shotBy)
+        {
+            var shotEv = new PlayerShotProjectileEvent(uid, shotBy);
+            RaiseLocalEvent(ref shotEv);
+        }
+        // WOLFGATE END
     }
 
     // Mono - handle hitscan
@@ -705,6 +715,11 @@ public abstract partial class SharedGunSystem : EntitySystem
     /// Call this whenever the ammo count for a gun changes.
     /// </summary>
     protected virtual void UpdateAmmoCount(EntityUid uid, bool prediction = true) {}
+
+    // WOLFGATE(Performance) START: server hook so auto-fire only walks bursting guns
+    /// <summary>Called when a gun starts a burst.</summary>
+    protected virtual void OnBurstActivated(EntityUid uid) {}
+    // WOLFGATE END
 
     protected void SetCartridgeSpent(EntityUid uid, CartridgeAmmoComponent cartridge, bool spent, bool despawn = true) // WOLFGATE(Wolfmed): playtest 1: despawn
     {
@@ -992,4 +1007,5 @@ public enum AmmoVisuals : byte
     HasAmmo, // used for generic visualizers. c# stuff can just check ammocount != 0
     MagLoaded,
     BoltClosed,
+    IsFull, // WOLFGATE(Xenoborgs): wizden#44389, used for generic visualizers
 }

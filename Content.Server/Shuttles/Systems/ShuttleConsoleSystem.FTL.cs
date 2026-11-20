@@ -2,7 +2,7 @@ using Content.Server.Power.EntitySystems; // Mono
 using Content.Server.Shuttles.Components;
 using Content.Server.Shuttles.Events;
 using Content.Shared._Mono.Ships;
-using Content.Shared._WF.Shuttles; // WOLFGATE(Shuttles)
+using Content.Shared._WG.Shuttles; // WOLFGATE(Shuttles)
 using Content.Shared.Popups;
 using Content.Shared.Shuttles.BUIStates;
 using Content.Shared.Shuttles.Events;
@@ -126,7 +126,7 @@ public sealed partial class ShuttleConsoleSystem
     /// <summary>
     /// Handles shuttle console FTLs.
     /// </summary>
-    private void ConsoleFTL(Entity<ShuttleConsoleComponent> ent, EntityCoordinates targetCoordinates, Angle targetAngle, MapId targetMap, EntityUid wfActor) // WOLFGATE(Shuttles): the no-drive refusal goes only to the sender
+    private void ConsoleFTL(Entity<ShuttleConsoleComponent> ent, EntityCoordinates targetCoordinates, Angle targetAngle, MapId targetMap, EntityUid wgActor) // WOLFGATE(Shuttles): the no-drive refusal goes only to the sender
     {
         var consoleUid = GetDroneConsole(ent.Owner);
 
@@ -139,6 +139,9 @@ public sealed partial class ShuttleConsoleSystem
             return;
 
         if (shuttleComp.Enabled == false)
+            return;
+
+        if (WgRefuseDisruptedFtl(shuttleUid.Value, ent.Owner, wgActor)) // WOLFGATE(BoardingAction): CanFTL's reason never reaches the pilot, so a held ship says why here.
             return;
 
         // Check shuttle can even FTL
@@ -155,17 +158,23 @@ public sealed partial class ShuttleConsoleSystem
         }
 
         // WOLFGATE(Shuttles) START: a jump needs a powered drive; this is the test the helm's FTL page reports
-        var wfDrive = _shuttle.GetFtlDriveStatus(shuttleUid.Value);
-        if (wfDrive != WFFtlDriveStatus.Ready)
+        var wgDrive = _shuttle.GetFtlDriveStatus(shuttleUid.Value);
+        if (wgDrive != WGFtlDriveStatus.Ready)
         {
-            _popup.PopupEntity(Loc.GetString(wfDrive == WFFtlDriveStatus.Missing
-                ? "shuttle-console-no-powered-ftl-drive"
-                : "shuttle-console-ftl-drive-unpowered"), ent.Owner, wfActor, PopupType.Medium);
+            _popup.PopupEntity(Loc.GetString(wgDrive switch
+            {
+                WGFtlDriveStatus.Missing => "shuttle-console-no-powered-ftl-drive",
+                WGFtlDriveStatus.Unmoored => "wg-lattice-ftl-dead", // WOLFGATE(Lattice): drives don't work past the Lattice's hold
+                _ => "shuttle-console-ftl-drive-unpowered",
+            }), ent.Owner, wgActor, PopupType.Medium);
             return;
         }
         // WOLFGATE END
 
         targetCoordinates = _shuttle.ClampCoordinatesToFTLRange(shuttleUid.Value, targetCoordinates);
+
+        if (WgRefuseLatticeTarget(targetCoordinates, ent.Owner, wgActor)) // WOLFGATE(Lattice): no jumping into a band where drives die
+            return;
 
         List<ShuttleExclusionObject>? exclusions = null;
         GetExclusions(ref exclusions);
@@ -191,6 +200,8 @@ public sealed partial class ShuttleConsoleSystem
         _shuttle.GetAllDockedShuttlesIgnoringFTLLock(shuttleUid.Value, dockedGrids);
 
         // Mono
+        // WOLFGATE(ShipCommand): an unrestricted grid jumps with other ships' helms close by
+        if (!_shuttle.WgIgnoresFtlProximity(shuttleUid.Value))
         foreach (var (console, consoleComp) in _lookup.GetEntitiesInRange<ShuttleConsoleComponent>(_transform.GetMapCoordinates(xform), ShuttleFTLRange))
         {
             var consoleXform = Transform(console);
@@ -226,7 +237,7 @@ public sealed partial class ShuttleConsoleSystem
                 drive,
                 out var massAdjustedStartupTime,
                 out var massAdjustedHyperSpaceTime);
-            massAdjustedStartupTime += WfCargoSpoolPenalty(shuttleUid.Value, drive); // WOLFGATE(CargoLoad): cargo lengthens the spool
+            massAdjustedStartupTime += WgCargoSpoolPenalty(shuttleUid.Value, drive); // WOLFGATE(CargoLoad): cargo lengthens the spool
             _shuttle.FTLToCoordinates(shuttleUid.Value, shuttleComp, adjustedCoordinates, targetAngle, massAdjustedStartupTime, massAdjustedHyperSpaceTime);
         }
     }

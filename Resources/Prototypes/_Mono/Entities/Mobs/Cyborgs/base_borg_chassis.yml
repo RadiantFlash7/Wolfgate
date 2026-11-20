@@ -57,30 +57,26 @@
     - TSFMC
   - type: Access
     tags:
-    - Security
-    - Armory
-    - Sergeant
-    - Bailiff
-    - Medical
-    - Chemistry
+    - Tsfmc
+    - TsfmcArmory
+    - TsfmcCaptain
+    - TsfmcColonel
     - TsfmcEngineering
     - Maintenance
     - External
-    - Command
-    - Brig
-    - Mercenary
-    - Captain
   - type: AccessReader
-    access: [["Security"], ["Armory"], ["Sergeant"], ["Bailiff"], ["TsfmcEngineering"], ["Brig"]]
+    access: [["Tsfmc"]]
   - type: IntrinsicRadioTransmitter
     channels:
     - Common
     - Nfsd
+    - Command
     - Traffic
   - type: ActiveRadio
     channels:
     - Common
     - Nfsd
+    - Command
     - Traffic
   - type: LanguageKnowledge
     speaks:
@@ -123,12 +119,11 @@
     - PirateNF
   - type: Access
     tags:
-    - Pirate
+    - PDV
     - PDVCommand
     - GrandVizier
-    - Mercenary
   - type: AccessReader
-    access: [["GrandVizier"]]
+    access: [["PDV"]]
   - type: IntrinsicRadioTransmitter
     channels:
     - Common
@@ -295,6 +290,10 @@
   - type: ShowJobIcons
   - type: SiliconLawProvider
     laws: XenoborgLawset
+  # WOLFGATE(Xenoborgs) START: wizden#45193, EMPs don't drain xenoborgs; CellHolderEmpResistanceSystem lends it to the cell
+  - type: EmpResistance
+    coefficient: 0
+  # WOLFGATE END
   - type: FootstepModifier # it flies instead of walking
     footstepSoundCollection:
       path: /Audio/_Mono/Effects/Footsteps/borgwalk3.ogg

@@ -1,10 +1,12 @@
 ﻿using Content.Client.Gameplay;
-using Content.Client._WF.Feedback; // WOLFGATE(Feedback)
-using Content.Client._WF.RoundSetup; // WOLFGATE(RoundSetup)
-using Content.Client._WF.MappingMode; // WOLFGATE(MappingMode)
+using Content.Client._WG.Feedback; // WOLFGATE(Feedback)
+using Content.Client._WG.Census; // WOLFGATE(Census)
+using Content.Client._WG.RoundSetup; // WOLFGATE(RoundSetup)
+using Content.Client._WG.MappingMode; // WOLFGATE(MappingMode)
 using Content.Client.Lobby; // WOLFGATE(InRoundCreator)
-using Content.Client._WF.Roadmap; // WOLFGATE(Roadmap)
-using Content.Client._WF.SectorControl; // WOLFGATE(SectorControl)
+using Content.Client._WG.Roadmap; // WOLFGATE(Roadmap)
+using Content.Client._WG.SectorControl; // WOLFGATE(SectorControl)
+using Content.Client._WG.LoreBook; // WOLFGATE(LoreBook)
 using Content.Client.UserInterface.Controls;
 using Content.Client.UserInterface.Systems.Guidebook;
 using Content.Client.UserInterface.Systems.Info;
@@ -91,11 +93,27 @@ public sealed partial class EscapeUIController : UIController, IOnStateEntered<G
         };
         // WOLFGATE END
 
+        // WOLFGATE(Census) START: census list in the game menu
+        _escapeWindow.CensusButton.OnPressed += _ =>
+        {
+            CloseEscapeWindow();
+            UIManager.GetUIController<CensusUIController>().ToggleWindow();
+        };
+        // WOLFGATE END
+
+        // WOLFGATE(LoreBook) START: lore book entry in the game menu
+        _escapeWindow.LoreBookButton.OnPressed += _ =>
+        {
+            CloseEscapeWindow();
+            UIManager.GetUIController<WGLoreBookUIController>().Open();
+        };
+        // WOLFGATE END
+
         // WOLFGATE(SectorControl) START: sector map entry in the game menu
         _escapeWindow.SectorMapButton.OnPressed += _ =>
         {
             CloseEscapeWindow();
-            UIManager.GetUIController<WFSectorMapUIController>().ToggleWindow();
+            UIManager.GetUIController<WGSectorMapUIController>().ToggleWindow();
         };
         // WOLFGATE END
 
@@ -111,7 +129,7 @@ public sealed partial class EscapeUIController : UIController, IOnStateEntered<G
         _escapeWindow.RoundSetupButton.OnPressed += _ =>
         {
             CloseEscapeWindow();
-            UIManager.GetUIController<WFRoundSetupUIController>().OpenWindow();
+            UIManager.GetUIController<WGRoundSetupUIController>().OpenWindow();
         };
         // WOLFGATE END
 
@@ -119,7 +137,7 @@ public sealed partial class EscapeUIController : UIController, IOnStateEntered<G
         _escapeWindow.MappingButton.OnPressed += _ =>
         {
             CloseEscapeWindow();
-            UIManager.GetUIController<WFMappingMenuUIController>().OpenWindow();
+            UIManager.GetUIController<WGMappingMenuUIController>().OpenWindow();
         };
 
         _escapeWindow.OnOpen += () =>
@@ -127,7 +145,7 @@ public sealed partial class EscapeUIController : UIController, IOnStateEntered<G
             if (_escapeWindow is not { } window)
                 return;
 
-            var mapping = UIManager.GetUIController<WFMappingMenuUIController>();
+            var mapping = UIManager.GetUIController<WGMappingMenuUIController>();
             window.MappingButton.Visible = mapping.Available;
             window.CharacterButton.Visible = !mapping.ModeEnabled;
             window.RoundSetupButton.Visible = !mapping.ModeEnabled;

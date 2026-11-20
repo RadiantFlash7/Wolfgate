@@ -6,7 +6,7 @@
   # No requirements. Anyone can be my slave.
   startingGear: MMCEmployeeGear
   alwaysUseSpawner: true
-  hideConsoleVisibility: true
+# hideConsoleVisibility: true
   icon: "JobIconMMCEmployee"
   supervisors: job-supervisors-mmc-liason
   assignedCompany: MMC
@@ -30,6 +30,9 @@
     - type: ChatRank
       rank: mmc-employee
     - type: RadioOnCryosleep
+      radioChannel: Mieyo
+# WOLFGATE(Roles): reports arrivals on the MMC radio, since the job spawner skips the station announcement
+    - type: WGRadioOnJoin
       radioChannel: Mieyo
   - !type:AddLanguageSpecial
     languagesSpoken:

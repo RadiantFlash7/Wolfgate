@@ -72,6 +72,10 @@ public sealed partial class SuitSensorSystem : EntitySystem
     {
         base.Update(frameTime);
 
+        // WOLFGATE(Performance): finding what's due walks every sensor; NextUpdate keeps the rate
+        if (_gameTiming.CurTick.Value % 3 != 1)
+            return;
+
         var curTime = _gameTiming.CurTime;
         //var sensors = EntityManager.EntityQueryEnumerator<SuitSensorComponent, DeviceNetworkComponent>(); // Frontier modification
         var sensors = EntityQueryEnumerator<SuitSensorComponent, DeviceNetworkComponent, TransformComponent>(); // Frontier modification
@@ -93,10 +97,12 @@ public sealed partial class SuitSensorSystem : EntitySystem
             // TODO: This would cause imprecision at different tick rates.
             sensor.NextUpdate = curTime + sensor.UpdateRate;
 
-            // get sensor status
-            var status = GetSensorState(uid, sensor);
-            if (status == null)
-                continue;
+            // WOLFGATE(Performance) START: the status is built below, once a server is known to be there to take it.
+            // // get sensor status
+            // var status = GetSensorState(uid, sensor);
+            // if (status == null)
+            //     continue;
+            // WOLFGATE END
 
             //Retrieve active server address if the sensor isn't connected to a server
             if (sensor.ConnectedServer == null)
@@ -110,8 +116,10 @@ public sealed partial class SuitSensorSystem : EntitySystem
                 sensor.ConnectedServer = address;
             }
 
-            // Send it to the connected server
-            var payload = SuitSensorToPacket(status);
+            // WOLFGATE(Performance) START: check the server before building the status and its packet.
+            // // Send it to the connected server
+            // var payload = SuitSensorToPacket(status);
+            // WOLFGATE END
 
             // Clear the connected server if its address isn't on the network
             if (!_deviceNetworkSystem.IsAddressPresent(device.DeviceNetId, sensor.ConnectedServer))
@@ -119,6 +127,14 @@ public sealed partial class SuitSensorSystem : EntitySystem
                 sensor.ConnectedServer = null;
                 continue;
             }
+
+            // WOLFGATE(Performance) START: the status and packet, moved here from above.
+            var status = GetSensorState(uid, sensor);
+            if (status == null)
+                continue;
+
+            var payload = SuitSensorToPacket(status);
+            // WOLFGATE END
 
             _deviceNetworkSystem.QueuePacket(uid, sensor.ConnectedServer, payload, device: device);
         }
@@ -416,6 +432,10 @@ public sealed partial class SuitSensorSystem : EntitySystem
         // finally, form suit sensor status
         // will additonally check the grid and name if it exists, as well if its expedition
         var status = new SuitSensorStatus(GetNetEntity(uid), userName, userJob, userJobIcon, userJobDepartments, userLocationName);
+        // WOLFGATE(Companies) START: the company rank on the ID, for its custom job icon
+        if (card.Owner.Valid && TryComp<Content.Shared._WG.Companies.WGCompanyRankIconComponent>(card, out var wgRankIcon))
+            status.WGCompanyRank = wgRankIcon.RankId;
+        // WOLFGATE END
         switch (sensor.Mode)
         {
             case SuitSensorMode.SensorBinary:
@@ -488,6 +508,7 @@ public sealed partial class SuitSensorSystem : EntitySystem
             [SuitSensorConstants.NET_NAME] = status.Name,
             [SuitSensorConstants.NET_JOB] = status.Job,
             [SuitSensorConstants.NET_JOB_ICON] = status.JobIcon,
+            [SuitSensorConstants.NET_WG_COMPANY_RANK] = status.WGCompanyRank, // WOLFGATE(Companies)
             [SuitSensorConstants.NET_JOB_DEPARTMENTS] = status.JobDepartments,
             [SuitSensorConstants.NET_IS_ALIVE] = status.IsAlive,
             [SuitSensorConstants.NET_SUIT_SENSOR_UID] = status.SuitSensorUid,
@@ -537,6 +558,8 @@ public sealed partial class SuitSensorSystem : EntitySystem
             TotalDamageThreshold = totalDamageThreshold,
             Coordinates = coords,
         };
+        if (payload.TryGetValue(SuitSensorConstants.NET_WG_COMPANY_RANK, out int wgCompanyRank)) // WOLFGATE(Companies)
+            status.WGCompanyRank = wgCompanyRank; // WOLFGATE(Companies)
         return status;
     }
 }

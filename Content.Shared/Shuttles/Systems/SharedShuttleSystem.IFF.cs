@@ -68,8 +68,19 @@ public abstract partial class SharedShuttleSystem
             }
         }
 
+        // WOLFGATE(Companies) START: a player company's ship shows its tag and name
+        if (TryComp<Content.Shared._WG.Companies.WGCompanyShipComponent>(gridUid, out var playerCompany))
+        {
+            companyName = $"[{playerCompany.Tag}] {playerCompany.Name}";
+            companyColor = playerCompany.Colour;
+        }
+        // WOLFGATE END
+
         var labelText = string.IsNullOrEmpty(entName) ? Loc.GetString("shuttle-console-unknown") : entName;
-        labelText = EntityManager.System<Content.Shared._WF.Newbie.WFNewbieSystem>().TagShipName(gridUid, labelText); // WOLFGATE(Newbie): tag a new player's ship
+        labelText = EntityManager.System<Content.Shared._WG.Newbie.WGNewbieSystem>().TagShipName(gridUid, labelText); // WOLFGATE(Newbie): tag a new player's ship
+        // WOLFGATE(Encounters): a ship holding someone says so on the scanner
+        if (HasComp<Content.Shared._WG.Encounters.WGHostageShipComponent>(gridUid))
+            labelText = Loc.GetString("wg-encounter-abduct-iff-label", ("name", labelText));
 
         // Add company info if available
         if (companyName != null && companyColor != null)

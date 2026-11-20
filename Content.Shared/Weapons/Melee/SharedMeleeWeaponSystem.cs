@@ -1,8 +1,8 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Numerics;
-using Content.Shared._WF.Barricades; // WOLFGATE(Barricades)
-using Content.Shared._WF.Wolfmed.Sounds; // WOLFGATE(Wolfmed)
+using Content.Shared._WG.Barricades; // WOLFGATE(Barricades)
+using Content.Shared._WG.Wolfmed.Sounds; // WOLFGATE(Wolfmed)
 using Content.Shared.ActionBlocker;
 using Content.Shared.Administration.Logs;
 using Content.Shared.CombatMode;
@@ -578,17 +578,19 @@ public abstract partial class SharedMeleeWeaponSystem : EntitySystem
         var weapon = GetEntity(ev.Weapon);
 
         // We skip weapon -> target interaction, as forensics system applies DNA on hit
-        Interaction.DoContactInteraction(user, weapon);
+        Interaction.DoContactInteraction(user, weapon, null, true, interactionParticles: false); // WOLFGATE(InteractionParticles)
 
         // If the user is using a long-range weapon, this probably shouldn't be happening? But I'll interpret melee as a
         // somewhat messy scuffle. See also, heavy attacks.
-        Interaction.DoContactInteraction(user, target);
+        Interaction.DoContactInteraction(user, target, weapon, true, interactionParticles: false); // WOLFGATE(InteractionParticles)
 
         // For stuff that cares about it being attacked.
         var attackedEvent = new AttackedEvent(meleeUid, user, targetXform.Coordinates);
         RaiseLocalEvent(target.Value, attackedEvent);
 
         var modifiedDamage = DamageSpecifier.ApplyModifierSets(damage + hitEvent.BonusDamage + attackedEvent.BonusDamage, hitEvent.ModifiersList);
+        // WOLFGATE: apply configured damage after melee modifier sets
+        modifiedDamage += hitEvent.PostModifierDamage;
         var damageResult = Damageable.TryChangeDamage(target, modifiedDamage, origin: user, armorPenetration: component.ArmorPenetration, partMultiplier: component.ClickPartDamageMultiplier, tool: meleeUid); // Shitmed Change // WOLFGATE(Wolfmed): W1: tool = the weapon, so Wolfmed's wound rules can tell melee from gunfire.
 
         if (damageResult is {Empty: false})
@@ -652,6 +654,7 @@ public abstract partial class SharedMeleeWeaponSystem : EntitySystem
 
         var damage = GetDamage(meleeUid, user, component);
         var entities = GetEntityList(ev.Entities);
+        entities.RemoveAll(target => !Exists(target)); // WOLFGATE(Performance): a target can be deleted before the swing arrives
 
         if (entities.Count == 0)
         {
@@ -724,7 +727,7 @@ public abstract partial class SharedMeleeWeaponSystem : EntitySystem
 
         var weapon = GetEntity(ev.Weapon);
 
-        Interaction.DoContactInteraction(user, weapon);
+        Interaction.DoContactInteraction(user, weapon, null, true, interactionParticles: false); // WOLFGATE(InteractionParticles)
 
         // For stuff that cares about it being attacked.
         foreach (var target in targets)
@@ -733,7 +736,7 @@ public abstract partial class SharedMeleeWeaponSystem : EntitySystem
 
             // If the user is using a long-range weapon, this probably shouldn't be happening? But I'll interpret melee as a
             // somewhat messy scuffle. See also, light attacks.
-            Interaction.DoContactInteraction(user, target);
+            Interaction.DoContactInteraction(user, target, weapon, true, interactionParticles: false); // WOLFGATE(InteractionParticles)
         }
 
         var appliedDamage = new DamageSpecifier();
@@ -754,6 +757,8 @@ public abstract partial class SharedMeleeWeaponSystem : EntitySystem
             var attackedEvent = new AttackedEvent(meleeUid, user, GetCoordinates(ev.Coordinates));
             RaiseLocalEvent(entity, attackedEvent);
             var modifiedDamage = DamageSpecifier.ApplyModifierSets(damage + hitEvent.BonusDamage + attackedEvent.BonusDamage, hitEvent.ModifiersList);
+            // WOLFGATE: apply configured damage after melee modifier sets
+            modifiedDamage += hitEvent.PostModifierDamage;
 
             var damageResult = Damageable.TryChangeDamage(entity, modifiedDamage, origin: user, armorPenetration: component.ArmorPenetration, partMultiplier: component.HeavyPartDamageMultiplier, tool: meleeUid); // Shitmed Change // WOLFGATE(Wolfmed): W1: tool = the weapon, see the light attack above.
 

@@ -20,7 +20,7 @@
     lightRadius: 15
   - type: ChameleonClothing
     slot: [ eyes ]
-    default: ClothingEyesGlassesDeathsquad
+    default: ClothingEyesGlassesSunglasses # WOLFGATE: an invalid default leaves the chameleon menu empty
   - type: UserInterface
     interfaces:
       enum.ChameleonUiKey.Key:
@@ -56,7 +56,7 @@
      - Biological
      - Inorganic
      - Silicon
-     - WFSiliconWolfmed # WOLFGATE(Wolfmed): playtest 3: the IPC's container, so its bar shows
+     - WGSiliconWolfmed # WOLFGATE(Wolfmed): playtest 3: the IPC's container, so its bar shows
      - Synth # WOLFGATE(Wolfmed): the HardLight Synth's container, so its bar shows
   - type: ShowHealthIcons
     damageContainers:

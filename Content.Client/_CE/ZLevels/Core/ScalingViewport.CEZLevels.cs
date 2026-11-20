@@ -7,7 +7,7 @@ using System.Numerics;
 using Content.Client._CE.ZLevels.Core;
 using Content.Shared._CE.ZLevels.Core.Components;
 using Content.Shared._CE.ZLevels.Core.EntitySystems;
-using Content.Shared._WF.Planets; // WOLFGATE(Planets)
+using Content.Shared._WG.Planets; // WOLFGATE(Planets)
 using Content.Shared.Maps;
 using Robust.Client.Graphics;
 using Robust.Client.Player;
@@ -173,7 +173,7 @@ public sealed partial class ScalingViewport
         else if (_entityManager.HasComponent<CEZGroundLayerComponent>(playerMap))
         {
             occludeBelowDepth = ownDepth;
-            WfAddCavernPass(playerMap, ownDepth, ownDepth, ref occludeBelowDepth); // WOLFGATE(Caverns): the cavern shows through the ground's holes.
+            WgAddCavernPass(playerMap, ownDepth, ownDepth, ref occludeBelowDepth); // WOLFGATE(Caverns): the cavern shows through the ground's holes.
         }
         // Otherwise walk downward while there are empty tiles to see through. A cloud or
         // ground layer ends the walk: nothing beneath it is visible.
@@ -183,7 +183,10 @@ public sealed partial class ScalingViewport
             var depthCursor = belowChainStartDepth;
             for (var i = 0; i < CESharedZLevelsSystem.MaxZLevelsBelowRendering && current != null; i++)
             {
-                _zPasses.Add((current.Value, depthCursor, false, false));
+                // WOLFGATE(Planets) START: an empty air layer under orbit is skipped, each pass being a whole render
+                if (!WgNothingInView(current.Value, depthCursor, ownDepth))
+                    _zPasses.Add((current.Value, depthCursor, false, false));
+                // WOLFGATE END
 
                 if (_entityManager.HasComponent<CEZCloudLayerComponent>(current.Value))
                 {
@@ -195,7 +198,7 @@ public sealed partial class ScalingViewport
                 if (_entityManager.HasComponent<CEZGroundLayerComponent>(current.Value))
                 {
                     occludeBelowDepth = depthCursor;
-                    WfAddCavernPass(current.Value, depthCursor, ownDepth, ref occludeBelowDepth); // WOLFGATE(Caverns): the cavern shows through the ground's holes.
+                    WgAddCavernPass(current.Value, depthCursor, ownDepth, ref occludeBelowDepth); // WOLFGATE(Caverns): the cavern shows through the ground's holes.
                     break;
                 }
 
@@ -303,7 +306,7 @@ public sealed partial class ScalingViewport
 
             Angle rot = _fallbackEye.Rotation * -1;
             var off = rot.ToWorldVec() * CEClientZLevelsSystem.ZLevelOffset * (d - ownDepth);
-            var scale = MathF.Pow(WFPlanetView.Shrink(_entityManager, targetMap), -d); // WOLFGATE(Planets): a planet's layers keep the perspective Monolith turned off
+            var scale = WGPlanetView.LayerScale(WGPlanetView.Shrink(_entityManager, targetMap, _player.LocalEntity), d); // WOLFGATE(Planets): a planet's layers keep the perspective Monolith turned off, aboard a ship
 
             return new ZEye(lowestDepth, d, highestDepth)
             {
@@ -340,7 +343,7 @@ public sealed partial class ScalingViewport
                 Angle rotation = _fallbackEye.Rotation * -1;
 
                 var offset = rotation.ToWorldVec() * CEClientZLevelsSystem.ZLevelOffset * (depth - ownDepth);
-                var zScale = MathF.Pow(WFPlanetView.Shrink(_entityManager, mapUid), -depth); // WOLFGATE(Planets): a planet's layers keep the perspective Monolith turned off
+                var zScale = WGPlanetView.LayerScale(WGPlanetView.Shrink(_entityManager, mapUid, _player.LocalEntity), depth); // WOLFGATE(Planets): a planet's layers keep the perspective Monolith turned off, aboard a ship
 
                 var zEye = new ZEye(lowestDepth, depth, highestDepth)
                 {

@@ -192,6 +192,14 @@ public sealed partial class ShipyardSystem : SharedShipyardSystem
         ShipyardSaleResult result = new ShipyardSaleResult();
         bill = 0;
 
+        // WOLFGATE(Companies) START: company hangar ships belong to the company and can't be sold
+        if (HasComp<Content.Server._WG.Companies.WGCompanyHangarShipComponent>(shuttleUid))
+        {
+            result.Error = ShipyardSaleError.InvalidShip;
+            return result;
+        }
+        // WOLFGATE END
+
         if (!TryComp<StationDataComponent>(stationUid, out var stationGrid)
             || !HasComp<ShuttleComponent>(shuttleUid)
             || !TryComp(shuttleUid, out TransformComponent? xform)
@@ -258,14 +266,18 @@ public sealed partial class ShipyardSystem : SharedShipyardSystem
             CleanGrid(shuttleUid, consoleUid);
         }
 
-        bill = (int)_pricing.AppraiseGrid(shuttleUid, LacksPreserveOnSaleComp);
+        var wgAppraisal = (int)_pricing.AppraiseGrid(shuttleUid, LacksPreserveOnSaleComp); // WOLFGATE(ShipCommand): appraised before a bargain's discount
+        bill = _wgShipServices.ResaleValue(shuttleUid, wgAppraisal); // WOLFGATE(ShipCommand): a bargain resells less its discount
 
-        // WOLFGATE(Shipyard) START: last look at the grid, with its deed, before it goes. See _WF/Shipyard.
-        var soldEv = new _WF.Shipyard.ShipSoldEvent(shuttleUid, consoleUid, stationUid, bill);
+        // WOLFGATE(Shipyard) START: last look at the grid, with its deed, before it goes. See _WG/Shipyard.
+        var soldEv = new _WG.Shipyard.ShipSoldEvent(shuttleUid, consoleUid, stationUid, wgAppraisal); // WOLFGATE(ShipCommand): the used lot lists a bargain at its full value
         RaiseLocalEvent(ref soldEv);
         // WOLFGATE END
 
-        QueueDel(shuttleUid);
+        // WOLFGATE(Shipyard) START: the hull is parked and taken apart over many ticks; this stalled the server
+        // QueueDel(shuttleUid);
+        _wgHullRetire.Retire(shuttleUid);
+        // WOLFGATE END
         _sawmill.Info($"Sold shuttle {shuttleUid} for {bill}");
 
         // Update all record UI (skip records, no new records)

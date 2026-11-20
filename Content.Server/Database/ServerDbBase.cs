@@ -7,23 +7,26 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Content.Server._Mono.Company;
-using Content.Server._WF.Genitals; // WOLFGATE(Genitals)
-using Content.Server._WF.Prototypes; // WOLFGATE(Prototypes)
+using Content.Server._WG.Genitals; // WOLFGATE(Genitals)
+using Content.Server._WG.Prototypes; // WOLFGATE(Prototypes)
 using Content.Server.Administration.Logs;
 using Content.Server.Administration.Managers;
 using Content.Shared._Common.Consent; // WOLFGATE(Genitals)
 using Content.Shared._Mono.Company;
-using Content.Shared._WF.Biotype; // WOLFGATE(Biotype)
-using Content.Shared._WF.BloodColour; // WOLFGATE(BloodColour)
-using Content.Shared._WF.ChatFont; // WOLFGATE(ChatFont)
-using Content.Shared._WF.TypingBubble; // WOLFGATE(TypingBubble)
-using Content.Shared._WF.EmoteVoices; // WOLFGATE(EmoteVoices)
-using Content.Shared._WF.Gags; // WOLFGATE(Gags)
-using Content.Shared._WF.CustomMarkings; // WOLFGATE(CustomMarkings)
-using Content.Shared._WF.Genitals; // WOLFGATE(Genitals)
-using Content.Shared._WF.Genitals.Profile; // WOLFGATE(Genitals)
-using Content.Shared._WF.LegStyle; // WOLFGATE(LegStyle)
-using Content.Shared._WF.Prototypes; // WOLFGATE(Prototypes)
+using Content.Shared._WG.Augments; // WOLFGATE(Augments)
+using Content.Shared._WG.Biotype; // WOLFGATE(Biotype)
+using Content.Shared._WG.BloodColour; // WOLFGATE(BloodColour)
+using Content.Shared._WG.ChatFont; // WOLFGATE(ChatFont)
+using Content.Shared._WG.CombatMusic; // WOLFGATE(CombatMusic)
+using Content.Shared._WG.TypingBubble; // WOLFGATE(TypingBubble)
+using Content.Shared._WG.EmoteVoices; // WOLFGATE(EmoteVoices)
+using Content.Server._WG.Voice; // WOLFGATE(Voice)
+using Content.Shared._WG.Gags; // WOLFGATE(Gags)
+using Content.Shared._WG.CustomMarkings; // WOLFGATE(CustomMarkings)
+using Content.Shared._WG.Genitals; // WOLFGATE(Genitals)
+using Content.Shared._WG.Genitals.Profile; // WOLFGATE(Genitals)
+using Content.Shared._WG.LegStyle; // WOLFGATE(LegStyle)
+using Content.Shared._WG.Prototypes; // WOLFGATE(Prototypes)
 using Content.Shared.Administration.Logs;
 using Content.Shared.Database;
 using Content.Shared.Ghost.Roles;
@@ -81,10 +84,10 @@ namespace Content.Server.Database
             // WOLFGATE(Prototypes) START: rows holding renamed prototype ids are saved under the current ids on load.
             var legacyRows = false;
             foreach (var profile in prefs.Profiles)
-                legacyRows |= WFLegacyDbRows.Update(profile);
+                legacyRows |= WGLegacyDbRows.Update(profile);
 
             if (legacyRows)
-                await WFLegacyDbRows.Save(db.DbContext, _opsLog, cancel);
+                await WGLegacyDbRows.Save(db.DbContext, _opsLog, cancel);
             // WOLFGATE END
 
             var maxSlot = prefs.Profiles.Max(p => p.Slot) + 1;
@@ -106,7 +109,21 @@ namespace Content.Server.Database
             await db.DbContext.SaveChangesAsync();
         }
 
+        // WOLFGATE(LiveFixes) START: a save that collided with another one retries once on the rows that save left
         public async Task SaveCharacterSlotAsync(NetUserId userId, ICharacterProfile? profile, int slot)
+        {
+            try
+            {
+                await WGSaveCharacterSlotOnce(userId, profile, slot);
+            }
+            catch (DbUpdateException)
+            {
+                await WGSaveCharacterSlotOnce(userId, profile, slot);
+            }
+        }
+
+        private async Task WGSaveCharacterSlotOnce(NetUserId userId, ICharacterProfile? profile, int slot)
+        // WOLFGATE END
         {
             await using var db = await GetDb();
 
@@ -267,8 +284,8 @@ namespace Content.Server.Database
                         groupLoadouts.Add(new Loadout()
                         {
                             // WOLFGATE(Prototypes): rows saved before a loadout rename load under its current id.
-                            Prototype = WFLegacyPrototypeIds.Resolve(WFLegacyPrototypeIds.Loadouts, profLoadout.LoadoutName),
-                            WFGagsColors = WFGagsColors.Parse(profLoadout.GagsColors), // WOLFGATE(Gags)
+                            Prototype = WGLegacyPrototypeIds.Resolve(WGLegacyPrototypeIds.Loadouts, profLoadout.LoadoutName),
+                            WGGagsColors = WGGagsColors.Parse(profLoadout.GagsColors), // WOLFGATE(Gags)
                         });
                     }
                 }
@@ -292,7 +309,7 @@ namespace Content.Server.Database
             return new HumanoidCharacterProfile(
                 profile.CharacterName,
                 profile.FlavorText,
-                WFLegacyPrototypeIds.Resolve(WFLegacyPrototypeIds.Species, profile.Species), // WOLFGATE(Prototypes): renamed species ids
+                WGLegacyPrototypeIds.Resolve(WGLegacyPrototypeIds.Species, profile.Species), // WOLFGATE(Prototypes): renamed species ids
                 profile.Age,
                 sex,
                 gender,
@@ -336,11 +353,17 @@ namespace Content.Server.Database
                 MismatchedParts = profile.MismatchedParts, // WOLFGATE(Species)
                 CustomMarkings = CustomMarkingRules.FromStored(profile.CustomMarkings), // WOLFGATE(CustomMarkings)
                 LegStance = (LegStance) profile.LegStance, // WOLFGATE(LegStyle)
-                Biotype = (WFBiotype) profile.Biotype, // WOLFGATE(Biotype)
-                BloodColor = WFBloodColourRules.FromStored(profile.BloodColor), // WOLFGATE(BloodColour)
-                ChatFont = WFChatFontRules.FromStored(profile.ChatFont), // WOLFGATE(ChatFont)
-                TypingIndicator = WFTypingBubbleRules.FromStored(profile.TypingIndicator), // WOLFGATE(TypingBubble)
+                Biotype = (WGBiotype) profile.Biotype, // WOLFGATE(Biotype)
+                Augments = WGAugmentRules.FromStored(profile.Augments), // WOLFGATE(Augments)
+                AugmentImplants = WGAugmentRules.ImplantsFromStored(profile.Augments), // WOLFGATE(Augments)
+                AugmentUnlocks = WGAugmentRules.UnlocksFromStored(profile.AugmentUnlocks), // WOLFGATE(Augments)
+                AugmentFound = WGAugmentRules.FoundFromStored(profile.AugmentUnlocks), // WOLFGATE(Augments)
+                BloodColor = WGBloodColourRules.FromStored(profile.BloodColor), // WOLFGATE(BloodColour)
+                ChatFont = WGChatFontRules.FromStored(profile.ChatFont), // WOLFGATE(ChatFont)
+                CombatMusic = WGCombatMusicRules.FromStored(profile.CombatMusic), // WOLFGATE(CombatMusic)
+                TypingIndicator = WGTypingBubbleRules.FromStored(profile.TypingIndicator), // WOLFGATE(TypingBubble)
                 MessageSound = MessageSoundRules.FromStored(profile.MessageSound), // WOLFGATE(EmoteVoices)
+                SpeechVoice = SpeechVoiceJson.FromStored(profile.SpeechVoice), // WOLFGATE(Voice)
             };
         }
 
@@ -382,12 +405,16 @@ namespace Content.Server.Database
             profile.CustomMarkings = CustomMarkingRules.ToStored(humanoid.CustomMarkings); // WOLFGATE(CustomMarkings)
             profile.LegStance = (int) humanoid.LegStance; // WOLFGATE(LegStyle)
             profile.Biotype = (int) humanoid.Biotype; // WOLFGATE(Biotype)
-            profile.BloodColor = WFBloodColourRules.ToStored(humanoid.BloodColor); // WOLFGATE(BloodColour)
-            profile.ChatFont = WFChatFontRules.ToStored(humanoid.ChatFont); // WOLFGATE(ChatFont)
-            profile.TypingIndicator = WFTypingBubbleRules.ToStored(humanoid.TypingIndicator); // WOLFGATE(TypingBubble)
+            profile.Augments = WGAugmentRules.ToStored(humanoid.Augments, humanoid.AugmentImplants); // WOLFGATE(Augments)
+            profile.AugmentUnlocks = WGAugmentRules.ToStored(humanoid.AugmentUnlocks, humanoid.AugmentFound); // WOLFGATE(Augments)
+            profile.BloodColor = WGBloodColourRules.ToStored(humanoid.BloodColor); // WOLFGATE(BloodColour)
+            profile.ChatFont = WGChatFontRules.ToStored(humanoid.ChatFont); // WOLFGATE(ChatFont)
+            profile.CombatMusic = WGCombatMusicRules.ToStored(humanoid.CombatMusic); // WOLFGATE(CombatMusic)
+            profile.TypingIndicator = WGTypingBubbleRules.ToStored(humanoid.TypingIndicator); // WOLFGATE(TypingBubble)
             profile.ScreamVoice = EmoteVoiceRules.ToStored(humanoid.ScreamVoice); // WOLFGATE(EmoteVoices)
             profile.LaughVoice = EmoteVoiceRules.ToStored(humanoid.LaughVoice); // WOLFGATE(EmoteVoices)
             profile.MessageSound = MessageSoundRules.ToStored(humanoid.MessageSound); // WOLFGATE(EmoteVoices)
+            profile.SpeechVoice = SpeechVoiceJson.ToStored(humanoid.SpeechVoice); // WOLFGATE(Voice)
 
             // WOLFGATE(Genitals) START: anatomy JSON; an unreadable column is kept as it is until the player edits anatomy.
             if (!(existingRow && humanoid.Genitals.LoadFailed))
@@ -411,11 +438,14 @@ namespace Content.Server.Database
             // Mono end
 
             profile.Jobs.Clear();
-            profile.Jobs.AddRange(
-                humanoid.JobPriorities
-                    .Where(j => j.Value != JobPriority.Never)
-                    .Select(j => new Job {JobName = j.Key, Priority = (DbJobPriority) j.Value})
-            );
+            // WOLFGATE(LiveFixes) START: the unique index allows one high priority job, so extra ones save as medium
+            // profile.Jobs.AddRange(
+            //     humanoid.JobPriorities
+            //         .Where(j => j.Value != JobPriority.Never)
+            //         .Select(j => new Job {JobName = j.Key, Priority = (DbJobPriority) j.Value})
+            // );
+            profile.Jobs.AddRange(Content.Server._WG.LiveFixes.WGProfileRows.Jobs(humanoid.JobPriorities));
+            // WOLFGATE END
 
             profile.Antags.Clear();
             profile.Antags.AddRange(
@@ -426,6 +456,7 @@ namespace Content.Server.Database
             profile.Traits.Clear();
             profile.Traits.AddRange(
                 humanoid.TraitPreferences
+                        .Distinct() // WOLFGATE(LiveFixes): the unique index allows each trait once
                         .Select(t => new Trait {TraitName = t})
             );
 
@@ -452,7 +483,7 @@ namespace Content.Server.Database
                         profileGroup.Loadouts.Add(new ProfileLoadout()
                         {
                             LoadoutName = loadout.Prototype,
-                            GagsColors = WFGagsColors.Format(loadout.WFGagsColors), // WOLFGATE(Gags)
+                            GagsColors = WGGagsColors.Format(loadout.WGGagsColors), // WOLFGATE(Gags)
                         });
                     }
 
@@ -2114,8 +2145,8 @@ INSERT INTO player_round (players_id, rounds_id) VALUES ({players[player]}, {id}
                 .SingleOrDefaultAsync(c => c.UserId == userId);
 
             // WOLFGATE(Prototypes): consent rows holding renamed toggle ids are saved under the current ids on load
-            if (consentSettings != null && WFLegacyDbRows.Update(consentSettings))
-                await WFLegacyDbRows.Save(db.DbContext, _opsLog);
+            if (consentSettings != null && WGLegacyDbRows.Update(consentSettings))
+                await WGLegacyDbRows.Save(db.DbContext, _opsLog);
 
             return consentSettings ?? new();
         }

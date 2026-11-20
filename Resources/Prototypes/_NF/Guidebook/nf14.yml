@@ -12,10 +12,13 @@
   - SectorTopology
   - Expeditions
   - CargoHauling # TODO: separate this out along with salvage and mining into some NF_Cargo section
+  - WGContracts # WOLFGATE(Contracts): contract board guide
   - Shipyard
   - WeaponsSystems # mono
   - Creatures # mono
   - MonoMisc # mono
+  - WGRemadeGuide # WOLFGATE(Remade): the Monolith, the Remade and how to end an outbreak
+  - WGLatticeGuide # WOLFGATE(Lattice): the bands, Drift, exotic matter and the anchors
 
 - type: guideEntry
   id: Bank
@@ -42,7 +45,7 @@
   priority: 2
   # WOLFGATE(Planets): planet flight guide under piloting
   children:
-  - WFPlanetFlight
+  - WGPlanetFlight
 
 - type: guideEntry
   id: SectorTopology

@@ -11,7 +11,7 @@ using Robust.Client.UserInterface.Controls;
 using Robust.Client.UserInterface.XAML;
 using Robust.Shared.Configuration;
 using Robust.Shared.Prototypes;
-using Content.Client._WF.Stylesheets; // WOLFGATE(Stylesheets)
+using Content.Client._WG.Stylesheets; // WOLFGATE(Stylesheets)
 
 namespace Content.Client.Lobby.UI
 {
@@ -139,6 +139,7 @@ namespace Content.Client.Lobby.UI
                 if (_inRound && slot == selectedSlot)
                     characterPickerButton.HideDelete();
 
+                characterPickerButton.ShowCompany(slot); // WOLFGATE(Companies): the character list names their company
                 Characters.AddChild(characterPickerButton);
 
                 characterPickerButton.OnPressed += args =>

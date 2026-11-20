@@ -45,6 +45,8 @@ public abstract partial class CESharedZLevelsSystem
 
     private void OnShutdown(Entity<CEZPhysicsComponent> entity, ref ComponentShutdown args)
     {
+        WGRaised.Remove(entity); // WOLFGATE(Performance): a deleted entity leaves the sprite passes
+        _wgOnSlope.Remove(entity); // WOLFGATE(Performance): a deleted body leaves the slope set
         SleepBody((entity, entity));
     }
 

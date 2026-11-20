@@ -1,3 +1,14 @@
+// WOLFGATE: restore the licence header removed by Kill Spdx
+// SPDX-FileCopyrightText: 2025 Ark
+// SPDX-FileCopyrightText: 2025 Redrover1760
+// SPDX-FileCopyrightText: 2025 RikuTheKiller
+// SPDX-FileCopyrightText: 2025 ScyronX
+// SPDX-FileCopyrightText: 2025 ark1368
+// SPDX-FileCopyrightText: 2025 sleepyyapril
+// SPDX-FileCopyrightText: 2025 starch
+//
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 // Copyright Rane (elijahrane@gmail.com) 2025
 // All rights reserved. Relicensed under AGPL with permission
 
@@ -21,6 +32,7 @@ using Content.Shared._Mono.ShipGuns;
 using Content.Shared.Examine;
 using Content.Server.Salvage.Expeditions;
 using Content.Shared._Crescent.Hardpoints;
+using Content.Shared._Crescent.ShipShields;
 
 namespace Content.Server._Mono.FireControl;
 
@@ -389,6 +401,7 @@ public sealed partial class FireControlSystem : EntitySystem
     {
         if (TerminatingOrDeleted(grid)
             || HasComp<FTLComponent>(grid)
+            || HasComp<Content.Server._WG.Planets.Hop.WGPlanetHopComponent>(grid) // WOLFGATE(Planets): no firing mid-hop
             || HasComp<SpaceArtilleryDisabledGridComponent>(grid)
         )
             return false;
@@ -505,6 +518,10 @@ public sealed partial class FireControlSystem : EntitySystem
         if (!TryComp<FireControllableComponent>(weapon, out var fireControlComponent))
             return false;
 
+        // WOLFGATE(ShipCombat): a gun with a turn rate turns toward the target and holds fire until laid on it.
+        if (_fireRotateQuery.HasComp(weapon) && !_wgTraverse.TryLay(weapon, coords, direction))
+            return false;
+
         // Check for obstacles in the firing direction
         if (!CanFireInDirection(weapon, weaponPos, direction, targetPos, weaponXform.MapID) && !fireControlComponent.IgnoreLos)
             return false;
@@ -575,6 +592,7 @@ public sealed partial class FireControlSystem : EntitySystem
         // Calculate distance to target (capped at maximum distance)
         var targetDistance = Vector2.Distance(weaponPos, targetPos);
         var rayDistance = Math.Min(targetDistance, maxDistance);
+        rayDistance = Math.Min(rayDistance, WgGridReach(weaponTransform)); // WOLFGATE(Performance): only the weapon's own grid can block, so the ray ends where it does
 
         // Initialize ray collision
         var ray = new CollisionRay(weaponPos, direction, collisionMask: (int)(CollisionGroup.Opaque | CollisionGroup.Impassable));
@@ -584,6 +602,10 @@ public sealed partial class FireControlSystem : EntitySystem
         {
             // Always ignore the source weapon itself
             if (entity == sourceWeapon)
+                return true;
+
+            // Always ignore shields, since shields are now opaque and will be caught by the LOS check
+            if (HasComp<ShipShieldComponent>(entity))
                 return true;
 
             // If the weapon isn't on a grid, we'll check against all entities
@@ -606,10 +628,10 @@ public sealed partial class FireControlSystem : EntitySystem
             IgnoreEntityNotOnSameGrid,
             rayDistance,
             returnOnFirstHit: true // We only need to know if there's ANY obstacle
-        ).ToList();
+        ); // WOLFGATE(Performance): no .ToList(), the result is only tested for emptiness
 
         // Has line of sight if there are no obstacles in the path
-        return raycastResults.Count == 0;
+        return !raycastResults.Any(); // WOLFGATE(Performance): was raycastResults.Count == 0
     }
 
     /// <summary>

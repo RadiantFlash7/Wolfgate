@@ -22,9 +22,14 @@ public sealed partial class ThermalSignatureSystem : EntitySystem
 
     private const float UpdateIntervalSeconds = 1f;
     private static readonly TimeSpan UpdateInterval = TimeSpan.FromSeconds(UpdateIntervalSeconds);
-    private TimeSpan _nextUpdateTime;
+    private TimeSpan _nextUpdateTime = TimeSpan.FromSeconds(0.8); // WOLFGATE(Performance): off the tick other one-second systems run on
 
     private const float HeatChangeThreshold = 1.02f;
+
+    // WOLFGATE(Performance) START: each pass refreshes one quarter of the signatures, by uid
+    private const int SliceCount = 4;
+    private int _slice;
+    // WOLFGATE END
 
     private List<Entity<ThermalSignatureComponent>> _gridQueue = new();
 
@@ -109,14 +114,25 @@ public sealed partial class ThermalSignatureSystem : EntitySystem
         }
 
         _gridQueue.Clear();
+        // WOLFGATE(Performance) START: only this pass's slice is refreshed, over the time since it was last
+        _slice = (_slice + 1) % SliceCount;
+        var sliceSeconds = UpdateIntervalSeconds * SliceCount;
+        // WOLFGATE END
         var query = EntityQueryEnumerator<ThermalSignatureComponent>();
         while (query.MoveNext(out var uid, out var sigComp))
         {
-            var ev = new GetThermalSignatureEvent();
-            RaiseLocalEvent(uid, ref ev);
+            // WOLFGATE(Performance) START: the other slices keep their stored heat and only add to the totals
+            if (uid.Id % SliceCount == _slice)
+            {
+                var ev = new GetThermalSignatureEvent();
+                RaiseLocalEvent(uid, ref ev);
 
-            sigComp.StoredHeat += ev.Signature * UpdateIntervalSeconds;
-            sigComp.StoredHeat *= MathF.Pow(sigComp.HeatDissipation, UpdateIntervalSeconds);
+                sigComp.StoredHeat += ev.Signature * sliceSeconds;
+                sigComp.StoredHeat *= MathF.Pow(sigComp.HeatDissipation, sliceSeconds);
+                if (!float.IsFinite(sigComp.StoredHeat)) // WOLFGATE: one bad source must not poison a grid's heat for good
+                    sigComp.StoredHeat = 0f;
+            }
+            // WOLFGATE END
 
             if (_mapGridQuery.HasComp(uid))
             {

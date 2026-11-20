@@ -1,3 +1,41 @@
+// WOLFGATE: restore the licence header removed by Kill Spdx
+// SPDX-FileCopyrightText: 2022 Alex Evgrashin
+// SPDX-FileCopyrightText: 2022 Andreas Kämper
+// SPDX-FileCopyrightText: 2022 EmoGarbage404
+// SPDX-FileCopyrightText: 2022 Fishfish458
+// SPDX-FileCopyrightText: 2022 Flipp Syder
+// SPDX-FileCopyrightText: 2022 Rane
+// SPDX-FileCopyrightText: 2022 Visne
+// SPDX-FileCopyrightText: 2022 fishfish458 <fishfish458>
+// SPDX-FileCopyrightText: 2023 Cheackraze
+// SPDX-FileCopyrightText: 2023 DrSmugleaf
+// SPDX-FileCopyrightText: 2023 Leon Friedrich
+// SPDX-FileCopyrightText: 2023 Nemanja
+// SPDX-FileCopyrightText: 2023 Slava0135
+// SPDX-FileCopyrightText: 2023 Vordenburg
+// SPDX-FileCopyrightText: 2023 deltanedas
+// SPDX-FileCopyrightText: 2023 keronshb
+// SPDX-FileCopyrightText: 2024 Checkraze
+// SPDX-FileCopyrightText: 2024 Dvir
+// SPDX-FileCopyrightText: 2024 Ed
+// SPDX-FileCopyrightText: 2024 GreaseMonk
+// SPDX-FileCopyrightText: 2024 LordCarve
+// SPDX-FileCopyrightText: 2024 Niels Huylebroeck
+// SPDX-FileCopyrightText: 2024 Pieter-Jan Briers
+// SPDX-FileCopyrightText: 2024 Repo
+// SPDX-FileCopyrightText: 2024 Robert V
+// SPDX-FileCopyrightText: 2024 Tayrtahn
+// SPDX-FileCopyrightText: 2024 checkraze
+// SPDX-FileCopyrightText: 2024 goet
+// SPDX-FileCopyrightText: 2024 lzk
+// SPDX-FileCopyrightText: 2024 metalgearsloth
+// SPDX-FileCopyrightText: 2025 Ark
+// SPDX-FileCopyrightText: 2025 ScarKy0
+// SPDX-FileCopyrightText: 2025 Whatstone
+// SPDX-FileCopyrightText: 2025 ark1368
+//
+// SPDX-License-Identifier: MPL-2.0
+
 using System.Linq;
 using Content.Server._NF.Bank;
 using System.Numerics;
@@ -35,6 +73,12 @@ using Content.Shared._NF.Bank.BUI; // Frontier
 using Content.Server._Mono.VendingMachine;
 using Content.Shared._Mono.Traits.Physical;
 using Content.Shared._Mono.Economy; // Mono - Seperation of cash payment from VendingMachineComp
+// WOLFGATE(Gags): receive returns sent to their vending machine
+using Content.Shared.Interaction;
+// WOLFGATE(Gags): refuse returns with stored items
+using Content.Shared.Storage;
+// WOLFGATE(Gags): validate and apply vending recolours
+using Content.Shared._WG.Gags;
 
 namespace Content.Server.VendingMachines
 {
@@ -57,6 +101,11 @@ namespace Content.Server.VendingMachines
         [Dependency] private IAdminLogManager _adminLogger = default!; // Frontier
         [Dependency] private VendingMachinePurchaseSystem _vendingPurchase = default!; // Mono
         [Dependency] private SharedCreditReceiverSystem _cash = default!; // Mono - Pwease chwose two pway wiw cawsh ow cwedit
+        // WOLFGATE(Gags) START: hold colours only until the selected item is dispensed
+        [Dependency] private SharedWGGagsSystem _gags = default!;
+        private readonly Dictionary<EntityUid, List<Color>> _pendingColors = new();
+        private readonly Dictionary<EntityUid, (InventoryType Type, string ItemId)> _pendingReturnItems = new();
+        // WOLFGATE END
 
         private const float WallVendEjectDistanceFromWall = 1f;
 
@@ -73,6 +122,10 @@ namespace Content.Server.VendingMachines
             //SubscribeLocalEvent<VendingMachineComponent, EntRemovedFromContainerMessage>(OnEntityRemoved); // Frontier //Mono: Moved this logic to CreditReceiverSystem
 
             SubscribeLocalEvent<VendingMachineComponent, ActivatableUIOpenAttemptEvent>(OnActivatableUIOpenAttempt);
+            // WOLFGATE(Gags): accept only products originally dispensed by this return-enabled vendor
+            SubscribeLocalEvent<VendingMachineComponent, AfterInteractUsingEvent>(OnAfterInteractUsing);
+            // WOLFGATE(Gags): drop pending vend state when the vendor goes away
+            SubscribeLocalEvent<VendingMachineComponent, ComponentShutdown>(OnVendorShutdown);
 
             Subs.BuiEvents<VendingMachineComponent>(VendingMachineUiKey.Key, subs =>
             {
@@ -121,6 +174,56 @@ namespace Content.Server.VendingMachines
                 args.Cancel();
         }
 
+        // WOLFGATE(Gags) START: restore stock for a purchased item returned to its original vendor
+        private void OnAfterInteractUsing(EntityUid uid, VendingMachineComponent component, AfterInteractUsingEvent args)
+        {
+            if (args.Handled || !component.CanReturnItems ||
+                !TryComp<WGGagsVendorReturnItemComponent>(args.Used, out var returnItem))
+                return;
+
+            args.Handled = true;
+
+            if (returnItem.Vendor != uid)
+            {
+                _popupSystem.PopupEntity(Loc.GetString("wg-gags-vending-return-wrong-vendor"), args.User);
+                return;
+            }
+
+            var inventory = returnItem.Type switch
+            {
+                InventoryType.Regular => component.Inventory,
+                InventoryType.Emagged => component.EmaggedInventory,
+                InventoryType.Contraband => component.ContrabandInventory,
+                _ => null,
+            };
+
+            if (inventory == null || !inventory.TryGetValue(returnItem.ItemId, out var entry))
+            {
+                _popupSystem.PopupEntity(Loc.GetString("wg-gags-vending-return-invalid"), args.User);
+                return;
+            }
+
+            if (TryComp<StorageComponent>(args.Used, out var storage) && storage.Container.ContainedEntities.Count > 0)
+            {
+                _popupSystem.PopupEntity(Loc.GetString("wg-gags-vending-return-not-empty"), args.User);
+                return;
+            }
+
+            if (entry.Amount != uint.MaxValue)
+                entry.Amount++;
+
+            Dirty(uid, component);
+            _popupSystem.PopupEntity(Loc.GetString("wg-gags-vending-return-success"), args.User);
+            QueueDel(args.Used);
+        }
+
+        private void OnVendorShutdown(EntityUid uid, VendingMachineComponent component, ComponentShutdown args)
+        {
+            _pendingColors.Remove(uid);
+            _pendingReturnItems.Remove(uid);
+        }
+        // WOLFGATE END
+
         private void OnInventoryEjectMessage(EntityUid uid, VendingMachineComponent component, VendingMachineEjectMessage args)
         {
             if (!this.IsPowered(uid, EntityManager))
@@ -132,7 +235,8 @@ namespace Content.Server.VendingMachines
             if (component.Ejecting)
                 return;
 
-            AuthorizedVend(uid, entity, args.Type, args.ID, component);
+            // WOLFGATE(Gags): pass colour options through the normal purchase checks
+            AuthorizedVend(uid, entity, args.Type, args.ID, component, args.Colors);
         }
 
         private void OnPowerChanged(EntityUid uid, VendingMachineComponent component, ref PowerChangedEvent args)
@@ -329,10 +433,15 @@ namespace Content.Server.VendingMachines
         /// <param name="type">The type of inventory the item is from</param>
         /// <param name="itemId">The prototype ID of the item</param>
         /// <param name="component"></param>
-        public void AuthorizedVend(EntityUid uid, EntityUid sender, InventoryType type, string itemId, VendingMachineComponent component)
+        // WOLFGATE(Gags) START: keep recolouring behind the regular price, stock and access checks
+        public void AuthorizedVend(EntityUid uid, EntityUid sender, InventoryType type, string itemId,
+            VendingMachineComponent component, List<Color>? colors = null)
         {
             if (!_prototypeManager.TryIndex<EntityPrototype>(itemId, out var proto))
                 return;
+
+            if (WgShipCommandRefuses(uid, sender, component)) // WOLFGATE(ShipCommand): a commanded ship's vendors turn the barred away
+                return; // WOLFGATE(ShipCommand)
 
             var price = _pricing.GetEstimatedPrice(proto);
             // Somewhere deep in the code of pricing, a hardcoded 20 dollar value exists for anything without
@@ -352,7 +461,8 @@ namespace Content.Server.VendingMachines
             var priceVend = _pricing.GetEstimatedVendPrice(proto);
             if (priceVend > 0.0 && component.RequiresCash) // if vending price exists, overwrite it.
                 totalPrice = (int) priceVend;
-            totalPrice = WfTradeBuyPrice(uid, proto, totalPrice); // WOLFGATE(TradeGoods): trade vendors charge the station's live price
+            totalPrice = WgTradeBuyPrice(uid, proto, totalPrice); // WOLFGATE(TradeGoods): trade vendors charge the station's live price
+            totalPrice = WgShipCommandPrice(uid, sender, totalPrice); // WOLFGATE(ShipCommand): a commanded ship's price rules
 
             if (IsAuthorized(uid, sender, component))
             {
@@ -375,6 +485,17 @@ namespace Content.Server.VendingMachines
 
                 if (TryEjectVendorItem(uid, type, itemId, component.CanShoot, component))
                 {
+                    // WOLFGATE(Gags): attach return provenance only after a purchase starts successfully
+                    if (component.CanReturnItems)
+                        _pendingReturnItems[uid] = (type, itemId);
+
+                    if (component.CanRecolor &&
+                        _gags.DefaultColors(new EntProtoId(itemId)) != null &&
+                        WGGagsColors.Sanitize(colors) is { } safeColors)
+                    {
+                        _pendingColors[uid] = safeColors;
+                    }
+
                     // WOLFGATE: a free vend skips the cash payment, which logs a zero amount as invalid
                     paidFully = totalPrice > 0 && _cash.TryCashPayment(uid, totalPrice, out var _, true); // Mono - Attempt to pay with cash before credit
 
@@ -398,10 +519,12 @@ namespace Content.Server.VendingMachines
 
                     _adminLogger.Add(LogType.Action, LogImpact.Low,
                         $"{ToPrettyString(sender):user} bought from [vendingMachine:{ToPrettyString(uid!)}, product:{proto.Name}, cost:{totalPrice},  with ${cashSlotBalance} in the cash slot and ${bankBalance} in the bank.");
+                    WgShipCommandRecord(uid, sender, proto, totalPrice); // WOLFGATE(ShipCommand): logged as service use aboard a commanded ship, a bargain held for the item
                 }
             }
             // End Frontier
         }
+        // WOLFGATE END
 
         /// <summary>
         /// Tries to update the visuals of the component based on its current state.
@@ -530,6 +653,25 @@ namespace Content.Server.VendingMachines
             }
 
             var ent = Spawn(vendComponent.NextItemToEject, spawnCoordinates);
+
+            // WOLFGATE(Gags) START: remember the vendor and stock entry for returns
+            if (_pendingReturnItems.Remove(uid, out var returnDetails) &&
+                vendComponent.CanReturnItems &&
+                returnDetails.ItemId == vendComponent.NextItemToEject)
+            {
+                var returnItem = AddComp<WGGagsVendorReturnItemComponent>(ent);
+                returnItem.Vendor = uid;
+                returnItem.Type = returnDetails.Type;
+                returnItem.ItemId = returnDetails.ItemId;
+            }
+            // WOLFGATE END
+
+            // WOLFGATE(Gags) START: apply colours only to the item whose purchase passed server validation
+            if (_pendingColors.Remove(uid, out var colors))
+                _gags.SetColors(ent, colors);
+            // WOLFGATE END
+
+            WgShipCommandMarkVended(uid, ent); // WOLFGATE(ShipCommand): a vend sold below its usual price resells for no more than was paid
 
             // Mono: Track vending machine purchases for pricing modifications
             // Only track if this was a paid purchase (not a random eject or force eject)

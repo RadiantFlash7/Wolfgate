@@ -10,6 +10,8 @@ using Content.Server._NF.Salvage; // Frontier
 
 using EntityPosition = (Robust.Shared.GameObjects.EntityUid Entity, Robust.Shared.Map.EntityCoordinates Coordinates);
 using Content.Server.StationEvents.Events; // Frontier
+using Content.Shared._WG.Performance; // WOLFGATE(Performance)
+using Robust.Shared.Timing; // WOLFGATE(Performance)
 
 namespace Content.Server.Worldgen.Systems;
 
@@ -19,6 +21,7 @@ namespace Content.Server.Worldgen.Systems;
 public sealed partial class LocalityLoaderSystem : BaseWorldSystem
 {
     [Dependency] private TransformSystem _xformSys = default!;
+    [Dependency] private IGameTiming _wgTiming = default!; // WOLFGATE(Performance)
     [Dependency] private LinkedLifecycleGridSystem _linkedLifecycleGrid = default!;
     private EntityQuery<LoadedChunkComponent> _loadedQuery;
     private EntityQuery<WorldControllerComponent> _controllerQuery;
@@ -39,9 +42,17 @@ public sealed partial class LocalityLoaderSystem : BaseWorldSystem
     public override void Update(float frameTime)
     {
         var e = EntityQueryEnumerator<LocalityLoaderComponent, TransformComponent>();
+        // WOLFGATE(Performance) START: each loader checks twice a second on its own tick; a player can't outrun that
+        var wgPeriod = WGTickSpread.Period(_wgTiming, 0.5f);
+        var wgTick = _wgTiming.CurTick;
+        // WOLFGATE END
 
         while (e.MoveNext(out var uid, out var loadable, out var xform))
         {
+            // WOLFGATE(Performance): see above
+            if (!WGTickSpread.Due(uid, wgTick, wgPeriod))
+                continue;
+
             if (!_controllerQuery.TryComp(xform.MapUid, out var controller)) // Mono
             {
                 RaiseLocalEvent(uid, new LocalStructureLoadedEvent());
@@ -89,19 +100,27 @@ public sealed partial class LocalityLoaderSystem : BaseWorldSystem
     {
         if (entity != null)
         {
+            // WOLFGATE(Performance) START: restrictions come from a per-tick index, and the player scans run only if the grid holds one
             // Handle mobrestrictions getting deleted
-            var query = AllEntityQuery<NFSalvageMobRestrictionsComponent>();
+            // var query = AllEntityQuery<NFSalvageMobRestrictionsComponent>();
+            //
+            // while (query.MoveNext(out var salvUid, out var salvMob))
+            // {
+            //     if (entity == salvMob.LinkedGridEntity && salvMob.DespawnIfOffLinkedGrid) // Mono - fix
+            //     {
+            //         QueueDel(salvUid);
+            //     }
+            // }
+            //
+            // _linkedLifecycleGrid.UnparentPlayersFromGrid(grid: entity, deleteGrid: false, ignoreLifeStage: true);
+            WGDespawnRestrictions(entity);
 
-            while (query.MoveNext(out var salvUid, out var salvMob))
+            if (WGMayHoldPlayers(entity))
             {
-                if (entity == salvMob.LinkedGridEntity && salvMob.DespawnIfOffLinkedGrid) // Mono - fix
-                {
-                    QueueDel(salvUid);
-                }
+                // Do not delete the grid, it is being deleted.
+                _linkedLifecycleGrid.UnparentPlayersFromGrid(grid: entity, deleteGrid: false, ignoreLifeStage: true);
             }
-
-            // Do not delete the grid, it is being deleted.
-            _linkedLifecycleGrid.UnparentPlayersFromGrid(grid: entity, deleteGrid: false, ignoreLifeStage: true);
+            // WOLFGATE END
         }
     }
     // Frontier

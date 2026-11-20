@@ -1,3 +1,10 @@
+# WOLFGATE: restore the licence header removed by Kill Spdx
+# SPDX-FileCopyrightText: 2025 Ilya246
+# SPDX-FileCopyrightText: 2025 Redrover1760
+# SPDX-FileCopyrightText: 2025 starch
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 - type: entity
   id: WeaponTurretCharonBase
   parent: BallisticArtilleryTier4HP
@@ -104,4 +111,4 @@
     soundInsert:
       path: /Audio/Weapons/Guns/MagIn/batrifle_magin.ogg
   # WOLFGATE(Weapons): refill from linked ammo loaders after each shot
-  - type: WFLoaderAutoFeed
+  - type: WGLoaderAutoFeed

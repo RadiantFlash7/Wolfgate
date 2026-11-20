@@ -135,6 +135,9 @@ public sealed partial class BluespaceErrorRule : StationEventSystem<BluespaceErr
 
                 if (component.ExtendIfPopulated)
                     _autoExtend.AutoExtend(uid, spawned);
+
+                if (component.ExtendIfPopulated && component.WgMaxExtensions is { } cap && TryComp<AutoExtendRuleComponent>(uid, out var extend)) // WOLFGATE(LiveFixes): capped events
+                    extend.MaxExtensions = cap;
             }
         }
 
@@ -223,11 +226,15 @@ public sealed partial class BluespaceErrorRule : StationEventSystem<BluespaceErr
 
         foreach (var componentGridUid in component.GridsUid)
         {
+            // WOLFGATE(LiveFixes) START: a grid destroyed in play is normal and must not stop the rest of the cleanup
+            // if (!EntityManager.TryGetComponent<TransformComponent>(componentGridUid, out var gridTransform))
+            // {
+            //     Log.Error("bluespace error objective was missing transform component");
+            //     return;
+            // }
             if (!EntityManager.TryGetComponent<TransformComponent>(componentGridUid, out var gridTransform))
-            {
-                Log.Error("bluespace error objective was missing transform component");
-                return;
-            }
+                continue;
+            // WOLFGATE END
 
             if (gridTransform.GridUid is not EntityUid gridUid)
             {
@@ -295,7 +302,7 @@ public sealed partial class BluespaceErrorRule : StationEventSystem<BluespaceErr
                             break;
                     }
                     if (gridValue / component.StartingValue > comp.IntegrityRequirement && requiredEntitiesFound) // good job!
-                        _currencyInjection.InjectCurrency(comp.Company, comp.Amount);
+                        _currencyInjection.InjectCurrency(comp.Injection);
                 }
                 // Mono end
 

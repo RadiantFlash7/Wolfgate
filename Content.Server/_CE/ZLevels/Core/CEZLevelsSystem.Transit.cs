@@ -89,7 +89,7 @@ public sealed partial class CEZLevelsSystem
         }
 
         EnsureComp<CEZPhysicsComponent>(grid);
-        WfRefreshOrbitParking(grid, mapUid); // WOLFGATE(Planets): a grid on a planet orbit layer holds its height instead of sinking.
+        WgRefreshOrbitParking(grid, mapUid); // WOLFGATE(Planets): a grid on a planet orbit layer holds its height instead of sinking.
 
         if (!HasComp<CEZGridFallerComponent>(grid))
         {
@@ -103,7 +103,7 @@ public sealed partial class CEZLevelsSystem
         Entity<CEZMapComponent, MapComponent> targetMap,
         int offset)
     {
-        if (WfRefusesLevelHop(grid, (targetMap.Owner, targetMap.Comp1))) // WOLFGATE(Planets): hulls leave orbit through transit and never hop below ground.
+        if (WgRefusesLevelHop(grid, (targetMap.Owner, targetMap.Comp1))) // WOLFGATE(Planets): hulls leave orbit through transit and never hop below ground.
             return false;
 
         var movedGrids = CollectGridSet(grid);
@@ -344,6 +344,8 @@ public sealed partial class CEZLevelsSystem
     /// </summary>
     private void MoveGridSetToMap(HashSet<EntityUid> movedGrids, EntityUid targetMap, int offset, int depth)
     {
+        WgAdoptStanders(movedGrids); // WOLFGATE(Planets): crates and players the ground layer still owns ride the hull off the planet.
+
         foreach (var gridUid in movedGrids)
         {
             var beforeEv = new CEZLevelBeforeMapMoveEvent(offset, depth);
@@ -356,7 +358,7 @@ public sealed partial class CEZLevelsSystem
             var worldPos = _transform.GetWorldPosition(xform);
             var worldRot = _transform.GetWorldRotation(xform);
 
-            WfDestroyRiderContacts(gridUid); // WOLFGATE(Planets): riders' contacts with the old map must not survive the move.
+            WgDestroyRiderContacts(gridUid); // WOLFGATE(Planets): riders' contacts with the old map must not survive the move.
             // The map change wipes joints and can reset momentum, so save and restore it.
             var linVel = Vector2.Zero;
             var angVel = 0f;
@@ -416,6 +418,9 @@ public sealed partial class CEZLevelsSystem
         if (xform.MapUid is not { } currentMap)
             return false;
 
+        if (!WgIsFlyableGrid(grid)) // WOLFGATE(Planets): planet ground is the map's own grid; moving it stops physics server-wide.
+            return false;
+
         if (HasComp<CEZTransitMapComponent>(currentMap))
             return false; // Already in transit.
 
@@ -426,11 +431,22 @@ public sealed partial class CEZLevelsSystem
         if (layers.Count == 0)
             return false;
 
+        // WOLFGATE(Planets) START: nothing in the convoy may be a map's own grid either.
+        foreach (var layer in layers)
+        {
+            foreach (var member in layer.Grids)
+            {
+                if (!WgIsFlyableGrid(member))
+                    return false;
+            }
+        }
+        // WOLFGATE END
+
         // Direction is decided for the whole convoy: descending needs a level below
         // the BOTTOM layer, climbing needs one above the TOP layer. Every interior
         // layer's gap is bounded by its neighbours' source maps, so only the two
         // extremes can fail.
-        var hasBelow = TryMapDown(layers[0].SourceMap, out var wfBelow) && !WfClosedToHulls(wfBelow); // WOLFGATE(Planets): hulls never descend below a planet's ground.
+        var hasBelow = TryMapDown(layers[0].SourceMap, out var wgBelow) && !WgClosedToHulls(wgBelow); // WOLFGATE(Planets): hulls never descend below a planet's ground.
         var hasAbove = TryMapUp(layers[^1].SourceMap, out _);
 
         var goDown = hasBelow && !(preferUpperGap && hasAbove);
@@ -487,8 +503,10 @@ public sealed partial class CEZLevelsSystem
                 var zPhys = EnsureComp<CEZPhysicsComponent>(gridUid);
                 SetZPosition((gridUid, zPhys), progress);
 
+                // WOLFGATE(Performance) START: grids are force-sent and nearby viewers get transit z-eyes; a global override recursed every hull child each tick
                 // Everyone gets to watch, not just PVS neighbours.
-                _pvsOverride.AddGlobalOverride(gridUid);
+                // _pvsOverride.AddGlobalOverride(gridUid);
+                // WOLFGATE END
 
                 // In transit = airborne: engines are live regardless of direction. Grids mapped
                 // in Static (station anchors and the like) need this to fly at all.
@@ -550,7 +568,7 @@ public sealed partial class CEZLevelsSystem
                 // Orbit tops a planet stack and is somewhere to arrive, not a ceiling to hang under: a held
                 // climb pops out into it instead of pinning the hull at the top of the last gap until the key is let
                 // go.
-                if (WfIsOrbitLayer(topUpper) && TryExitTransit(grid))
+                if (WgIsOrbitLayer(topUpper) && TryExitTransit(grid))
                     return true;
                 // WOLFGATE END
 
@@ -719,7 +737,7 @@ public sealed partial class CEZLevelsSystem
             }
             else
             {
-                if (old.LowerMap is not { } newUpper || !TryMapDown(newUpper, out var below) || WfClosedToHulls(below)) // WOLFGATE(Planets): a descending convoy lands on the ground instead of hopping below it.
+                if (old.LowerMap is not { } newUpper || !TryMapDown(newUpper, out var below) || WgClosedToHulls(below)) // WOLFGATE(Planets): a descending convoy lands on the ground instead of hopping below it.
                     return false;
 
                 plans.Add((oldMap, below.Owner, newUpper, -1, below.Comp.Depth));
@@ -817,11 +835,13 @@ public sealed partial class CEZLevelsSystem
                     SetZVelocity((gridUid, zPhys), 0f);
                 }
 
-                _pvsOverride.RemoveGlobalOverride(gridUid);
+                // WOLFGATE(Performance): the matching add was removed
+                // _pvsOverride.RemoveGlobalOverride(gridUid);
 
                 // Landing on a grid causes an explosion. Don't do that.
                 _shuttle.Smimsh(gridUid, explodeGrids: true, ignoredGrids: movedGrids);
-                WfClearLandingObstacles(gridUid, clearance: WFSetDownClearance, grownOnly: true); // WOLFGATE(Planets): a hull that sets down breaks the trees and rocks it would rest against
+                WgClearLandingObstacles(gridUid, clearance: WGSetDownClearance, grownOnly: true); // WOLFGATE(Planets): a hull that sets down breaks the trees and rocks it would rest against
+                WgBreakLandedContacts(gridUid); // WOLFGATE(Planets): whatever else the hull came down wedged on goes too, however it got there
             }
 
             // The set has left; a transit map only ever hosts one set.

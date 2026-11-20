@@ -7,7 +7,9 @@
   - ShipyardNFROperation
   - ShipyardTakeaway
   - ShipyardMotleyAnne
-  - WFShipPa # WOLFGATE(ShipPa)
+  - WGShipPa # WOLFGATE(ShipPa)
+  - WGShipyardAsfRevelation # WOLFGATE(Asf)
+  - WGShipyardAsfSurveyor # WOLFGATE(Asf)
 
 - type: guideEntry
   id: ShipyardTakeaway

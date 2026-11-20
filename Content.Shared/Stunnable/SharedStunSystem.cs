@@ -24,6 +24,7 @@ using Content.Shared._White.Standing;
 using Content.Shared.Jittering;
 using Content.Shared.Speech.EntitySystems;
 using Robust.Shared.Network; // WOLFGATE(Standing)
+using Robust.Shared.Player; // WOLFGATE(Performance)
 
 namespace Content.Shared.Stunnable;
 
@@ -65,7 +66,7 @@ public abstract partial class SharedStunSystem : EntitySystem
         SubscribeLocalEvent<StunOnContactComponent, StartCollideEvent>(OnStunOnContactCollide);
 
         // helping people up if they're knocked down
-        // WOLFGATE(Standing) START: WFHelpUpSystem handles helping up, including through a hug
+        // WOLFGATE(Standing) START: WGHelpUpSystem handles helping up, including through a hug
         // SubscribeLocalEvent<KnockedDownComponent, InteractHandEvent>(OnInteractHand);
         // WOLFGATE END
         SubscribeLocalEvent<SlowedDownComponent, RefreshMovementSpeedModifiersEvent>(OnRefreshMovespeed);
@@ -151,7 +152,7 @@ public abstract partial class SharedStunSystem : EntitySystem
         // WOLFGATE(Standing) START: only the server sends this; a client sent one for every knockdown it saw
         // RaiseNetworkEvent(new CheckAutoGetUpEvent(GetNetEntity(uid))); // WD EDIT
         if (_net.IsServer)
-            RaiseNetworkEvent(new CheckAutoGetUpEvent(GetNetEntity(uid)));
+            RaiseNetworkEvent(new CheckAutoGetUpEvent(GetNetEntity(uid)), Filter.Pvs(uid, entityManager: EntityManager)); // WOLFGATE(Performance): only viewers of the body need it
         // WOLFGATE END
         _layingDown.TryLieDown(uid, null, null, DropHeldItemsBehavior.DropIfStanding); // WD EDIT
     }
@@ -236,6 +237,13 @@ public abstract partial class SharedStunSystem : EntitySystem
 
         if (!Resolve(uid, ref status, false))
             return false;
+
+        // WOLFGATE(Modsuits) START: rolling MOD spheres shrug off knockdowns
+        var knockdownAttempt = new Content.Shared._WG.Modsuits.Modules.KnockDownAttemptEvent();
+        RaiseLocalEvent(uid, ref knockdownAttempt);
+        if (knockdownAttempt.Cancelled)
+            return false;
+        // WOLFGATE END
 
         if (!_statusEffect.TryAddStatusEffect<KnockedDownComponent>(uid, "KnockedDown", time, refresh))
             return false;

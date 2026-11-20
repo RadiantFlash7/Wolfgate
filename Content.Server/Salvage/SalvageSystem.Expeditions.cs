@@ -62,7 +62,7 @@ public sealed partial class SalvageSystem
         SubscribeLocalEvent<SalvageExpeditionComponent, ComponentGetState>(OnExpeditionGetState);
 
         SubscribeLocalEvent<SalvageStructureComponent, ExaminedEvent>(OnStructureExamine);
-        InitializeWFConsoleRefresh(); // WOLFGATE(Expeditions): refresh the console on open and anchor
+        InitializeWGConsoleRefresh(); // WOLFGATE(Expeditions): refresh the console on open and anchor
 
         Subs.CVar(_cfgManager, CCVars.SalvageExpeditionCooldown, SetCooldownChange, true); // Frontier
         Subs.CVar(_cfgManager, NFCCVars.SalvageExpeditionFailedCooldown, SetFailedCooldownChange, true); // Frontier
@@ -177,7 +177,11 @@ public sealed partial class SalvageSystem
                 comp.Cooldown = false;
             //comp.NextOffer += TimeSpan.FromSeconds(_cooldown); // Frontier
             comp.NextOffer = currentTime + TimeSpan.FromSeconds(_cooldown); // Frontier
-            GenerateMissions(comp);
+            // WOLFGATE(PlanetExpeditions) START: sites on the sector's worlds are offered in place of generated maps
+            // GenerateMissions(comp);
+            if (!WgTryOfferPlanetMissions(uid, comp))
+                GenerateMissions(comp);
+            // WOLFGATE END
             UpdateConsoles(uid, comp);
         }
     }

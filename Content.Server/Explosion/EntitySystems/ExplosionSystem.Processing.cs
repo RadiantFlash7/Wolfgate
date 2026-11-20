@@ -2,7 +2,7 @@ using System.Linq;
 using System.Numerics;
 using Content.Server.Atmos.EntitySystems;
 using Content.Server.Explosion.Components;
-using Content.Server._WF.Wolfmed.Explosion; // WOLFGATE(Wolfmed): HOOK 22
+using Content.Server._WG.Wolfmed.Explosion; // WOLFGATE(Wolfmed): HOOK 22
 using Content.Shared.CCVar;
 using Content.Shared.Damage;
 using Content.Shared.Database;
@@ -24,7 +24,8 @@ using Robust.Shared.Timing;
 using Robust.Shared.Utility;
 using System.Numerics;
 using TimedDespawnComponent = Robust.Shared.Spawners.TimedDespawnComponent;
-using Content.Shared._WF.RMCCore.Explosion; // WOLFGATE(RMCCore)
+using Content.Shared._WG.RMCCore.Explosion; // WOLFGATE(RMCCore)
+using Content.Server._WG.AdminVessels; // WOLFGATE(AdminVessels)
 
 namespace Content.Server.Explosion.EntitySystems;
 
@@ -87,7 +88,7 @@ public sealed partial class ExplosionSystem
     /// </summary>
     public override void Update(float frameTime)
     {
-        WFProcessMicroExplosions(); // WOLFGATE(BattleLoad): bullet-sized blasts queued last tick
+        WGProcessMicroExplosions(); // WOLFGATE(BattleLoad): bullet-sized blasts queued last tick
 
         if (_activeExplosion == null && _explosionQueue.Count == 0)
             // nothing to do
@@ -164,7 +165,8 @@ public sealed partial class ExplosionSystem
 #endif
         }
 
-        Log.Info($"Processed {TilesPerTick - tilesRemaining} tiles in {Stopwatch.Elapsed.TotalMilliseconds}ms");
+        // WOLFGATE(Performance): Debug, was Info; it logged every step of every explosion
+        Log.Debug($"Processed {TilesPerTick - tilesRemaining} tiles in {Stopwatch.Elapsed.TotalMilliseconds}ms");
 
         // we have finished processing our tiles. Is there still an ongoing explosion?
         if (_activeExplosion != null)
@@ -195,7 +197,7 @@ public sealed partial class ExplosionSystem
             return false;
 
         // WOLFGATE(ShipArmor): armored mounts keep their floor until the armor falls
-        if (WFArmorHoldsFloor(uid))
+        if (WGArmorHoldsFloor(uid))
             return true;
 
         if (!_physicsQuery.TryGetComponent(uid, out var physics))
@@ -552,6 +554,9 @@ public sealed partial class ExplosionSystem
         if (tileDef.Indestructible)
             return;
 
+        if (HasComp<WGBlastproofFloorsComponent>(tileRef.GridUid)) // WOLFGATE(AdminVessels): a blast-proof grid loses no tile
+            return;
+
         if (!CanCreateVacuum)
             canCreateVacuum = false;
         else if (tileDef.MapAtmosphere)
@@ -578,6 +583,15 @@ public sealed partial class ExplosionSystem
 
         if (tileDef.TileId == tileRef.Tile.TypeId)
             return;
+
+        // WOLFGATE(Planets) START: a blast leaves a planet's ground, not station plating, lattice or a hole under a player's floor.
+        if (_wgPlanetTileBreak.BlastTile(tileRef, tileDef) is { } ground)
+        {
+            if (ground != tileRef.Tile)
+                damagedTiles.Add((tileRef.GridIndices, ground));
+            return;
+        }
+        // WOLFGATE END
 
         damagedTiles.Add((tileRef.GridIndices, new Tile(tileDef.TileId)));
     }

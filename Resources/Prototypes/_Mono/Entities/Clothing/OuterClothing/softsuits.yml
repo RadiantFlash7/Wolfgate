@@ -5,6 +5,11 @@
   name: DME EVA Suit
   description: An EVA suit with a built-in helmet commonly issued to wealthy traders.
   components:
+  # WOLFGATE(ArmorSpecialization): cold seal.
+  - type: WGWoundWard
+    examine: wg-armor-spec-cold-sealed-examine
+    blocks:
+    - WGWolfmedFrostbiteWound
   - type: Sprite
     sprite: _NF/Clothing/OuterClothing/Suits/eva_color.rsi
     layers:

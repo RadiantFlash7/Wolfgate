@@ -416,6 +416,10 @@ public sealed partial class AccessReaderSystem : EntitySystem
         if (IsPaused(ent) || ent.Comp.LoggingDisabled)
             return;
 
+        // WOLFGATE(Feedback): a vehicle opens doors for its rider, so the rider is the one logged
+        if (TryComp<Content.Shared.Vehicle.Components.VehicleComponent>(accessor, out var wgVehicle) && wgVehicle.Rider is { } wgRider)
+            accessor = wgRider;
+
         string? name = null;
         if (TryComp<NameIdentifierComponent>(accessor, out var nameIdentifier))
             name = nameIdentifier.FullIdentifier;

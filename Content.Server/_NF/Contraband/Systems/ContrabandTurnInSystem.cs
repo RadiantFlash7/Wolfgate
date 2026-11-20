@@ -131,6 +131,7 @@ public sealed partial class ContrabandTurnInSystem : SharedContrabandTurnInSyste
     {
         amount = 0;
         toSell = new HashSet<EntityUid>();
+        var street = 0.0; // WOLFGATE(WolfChem): the street value of the narcotics handed in, summed over the pallets
 
         foreach (var (palletUid, _) in GetContrabandPallets(gridUid))
         {
@@ -157,6 +158,7 @@ public sealed partial class ContrabandTurnInSystem : SharedContrabandTurnInSyste
                         continue;
 
                     var value = comp.TurnInValues[console.RewardType];
+                    value = EntityManager.System<Content.Server._WG.WolfChem.Narcotics.WGNarcoticGoodsSystem>().TurnIn(ent, value, ref street, toSell); // WOLFGATE(WolfChem): narcotics hand in for what they hold together
                     // Mono Begin - Accounting for stacks of contraband
                     if (TryComp<StackComponent>(ent, out var stackcomp))
                         value *= stackcomp.Count;
@@ -174,7 +176,8 @@ public sealed partial class ContrabandTurnInSystem : SharedContrabandTurnInSyste
     {
         if (_mobQuery.HasComponent(uid))
         {
-            if (_mobQuery.GetComponent(uid).CurrentState == MobState.Dead) // Allow selling alive prisoners
+            // WOLFGATE: an executed heretic's body is what the Sultanate pays for
+            if (_mobQuery.GetComponent(uid).CurrentState == MobState.Dead && !HasComp<Content.Server._Mono.PDV.Components.HereticComponent>(uid)) // Allow selling alive prisoners
             {
                 return false;
             }

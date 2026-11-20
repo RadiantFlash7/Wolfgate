@@ -62,7 +62,7 @@ namespace Content.Server.Atmos.EntitySystems
         // WOLFGATE(Performance): double buffer, so fire events queued while igniting cannot break the loop
         private Dictionary<Entity<FlammableComponent>, float> _fireEvents = new();
         private Dictionary<Entity<FlammableComponent>, float> _processingFireEvents = new(); // WOLFGATE(Performance)
-        private readonly List<Entity<FlammableComponent>> _wfDueFlammables = new(); // WOLFGATE(Performance): see Update
+        private readonly List<Entity<FlammableComponent>> _wgDueFlammables = new(); // WOLFGATE(Performance): see Update
 
         public override void Initialize()
         {
@@ -292,6 +292,10 @@ namespace Content.Server.Atmos.EntitySystems
 
         private void OnTileFire(Entity<FlammableComponent> ent, ref TileFireEvent args)
         {
+            // WOLFGATE(Modsuits): the plasma stabilizer module filters gas ignition.
+            if (HasComp<Content.Shared._WG.Modsuits.Modules.ModPlasmaStabilizerComponent>(ent))
+                return;
+
             var tempDelta = args.Temperature - ent.Comp.MinIgnitionTemperature;
 
             _fireEvents.TryGetValue(ent, out var maxTemp);
@@ -482,19 +486,26 @@ namespace Content.Server.Atmos.EntitySystems
             }
             _processingFireEvents.Clear(); // WOLFGATE(Performance): clear the processed buffer
 
+            if (WgSkipSweep()) // WOLFGATE(Dormancy): the once-a-second sweep runs ten times a second, not every tick.
+                return;
+
             var curTime = _timing.CurTime;
 
             // TODO: This needs cleanup to take off the crust from TemperatureComponent and shit.
             // WOLFGATE(Performance) START: burning can destroy things and spawn flammable debris, which broke the live query
-            _wfDueFlammables.Clear();
-            var query = EntityQueryEnumerator<FlammableComponent, TransformComponent>();
-            while (query.MoveNext(out var dueUid, out var dueFlammable, out _))
+            _wgDueFlammables.Clear();
+            // Finding what's due walks every flammable entity, so only do it every third tick; NextUpdate keeps the rate.
+            if (_timing.CurTick.Value % 3 == 0)
             {
-                if (curTime >= dueFlammable.NextUpdate)
-                    _wfDueFlammables.Add((dueUid, dueFlammable));
+                var query = EntityQueryEnumerator<FlammableComponent, TransformComponent>();
+                while (query.MoveNext(out var dueUid, out var dueFlammable, out _))
+                {
+                    if (curTime >= dueFlammable.NextUpdate)
+                        _wgDueFlammables.Add((dueUid, dueFlammable));
+                }
             }
 
-            foreach (var (uid, flammable) in _wfDueFlammables)
+            foreach (var (uid, flammable) in _wgDueFlammables)
             {
                 if (flammable.Deleted || TerminatingOrDeleted(uid))
                     continue;

@@ -28,7 +28,7 @@ public sealed partial class AutoExtendRuleSystem : EntitySystem
                 continue;
             }
 
-            if (stationEv.EndTime == null)
+            if (stationEv.EndTime == null || extendRule.Extensions >= extendRule.MaxExtensions) // WOLFGATE(LiveFixes): extensions are capped
                 continue;
 
             // if we're too early to check then don't
@@ -43,6 +43,10 @@ public sealed partial class AutoExtendRuleSystem : EntitySystem
             var hasNearbyPlayer = false;
             foreach (var entUid in extendRule.Entities)
             {
+                // WOLFGATE(LiveFixes): a watched grid can be deleted before the rule ends
+                if (TerminatingOrDeleted(entUid))
+                    continue;
+
                 // this is copypasted and modified from NPCSystem
                 var xform = Transform(entUid);
                 var ourCoords = xform.Coordinates;
@@ -78,8 +82,23 @@ public sealed partial class AutoExtendRuleSystem : EntitySystem
                     break;
             }
 
+            // WOLFGATE(LiveFixes) START: count each extension against the cap
+            // if (hasNearbyPlayer)
+            //     stationEv.EndTime += extendRule.ExtendBy;
             if (hasNearbyPlayer)
+            {
                 stationEv.EndTime += extendRule.ExtendBy;
+                extendRule.Extensions++;
+                // The last extension sets the real end, so its warning goes out again with its full window.
+                if (extendRule.Extensions >= extendRule.MaxExtensions)
+                {
+                    var warned = _timing.CurTime + TimeSpan.FromSeconds(stationEv.WarningDurationLeft);
+                    if (stationEv.EndTime < warned)
+                        stationEv.EndTime = warned;
+                    stationEv.WarningAnnounced = false;
+                }
+            }
+            // WOLFGATE END
         }
 
         foreach (var uid in unExtendQueue)

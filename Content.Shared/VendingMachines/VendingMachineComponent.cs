@@ -4,7 +4,7 @@ using Robust.Shared.GameStates;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Serialization;
 using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom;
-using Content.Shared._WF.EngineCompat;
+using Content.Shared._WG.EngineCompat;
 using Content.Shared._NF.Bank.Components; // Frontier
 
 namespace Content.Shared.VendingMachines
@@ -32,6 +32,14 @@ namespace Content.Shared.VendingMachines
         /// </summary>
         [DataField]
         public float EjectDelay = 1.2f;
+
+        // WOLFGATE(Gags): enable recolouring items before purchase
+        [DataField, AutoNetworkedField]
+        public bool CanRecolor;
+
+        // WOLFGATE(Gags): enable returning purchased clothing to its vendor
+        [DataField, AutoNetworkedField]
+        public bool CanReturnItems;
 
         // Frontier: random ejection
         /// <summary>

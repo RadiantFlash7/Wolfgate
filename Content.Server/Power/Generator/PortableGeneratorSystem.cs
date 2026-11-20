@@ -209,11 +209,23 @@ public sealed partial class PortableGeneratorSystem : SharedPortableGeneratorSys
             args.DisableMessage = Loc.GetString("fuel-generator-verb-disable-on");
     }
 
+    // WOLFGATE(Performance): UI state is pushed at 4 Hz, and only for generators with a viewer
+    private float _wgUiAccumulator;
+    private const float WgUiInterval = 0.25f;
+
     public override void Update(float frameTime)
     {
-        var query = EntityQueryEnumerator<PortableGeneratorComponent, FuelGeneratorComponent, PowerSupplierComponent>();
+        // WOLFGATE(Performance) START: ActiveUserInterfaceComponent is the engine's open-UI marker
+        _wgUiAccumulator += frameTime;
+        if (_wgUiAccumulator < WgUiInterval)
+            return;
+        _wgUiAccumulator = 0f;
 
-        while (query.MoveNext(out var uid, out var portGen, out var fuelGen, out var powerSupplier))
+        // var query = EntityQueryEnumerator<PortableGeneratorComponent, FuelGeneratorComponent, PowerSupplierComponent>();
+        var query = EntityQueryEnumerator<ActiveUserInterfaceComponent, PortableGeneratorComponent, FuelGeneratorComponent, PowerSupplierComponent>();
+        // WOLFGATE END
+
+        while (query.MoveNext(out var uid, out _, out var portGen, out var fuelGen, out var powerSupplier)) // WOLFGATE(Performance): skip the ActiveUserInterfaceComponent slot
         {
             UpdateUI(uid, portGen, fuelGen, powerSupplier);
         }

@@ -1,3 +1,10 @@
+// WOLFGATE: restore the licence header removed by Kill Spdx
+// SPDX-FileCopyrightText: 2025 Ark
+// SPDX-FileCopyrightText: 2025 Redrover1760
+// SPDX-FileCopyrightText: 2025 ark1368
+//
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 using Content.Shared._Crescent.ShipShields;
 using Robust.Client.ResourceManagement;
 using Robust.Client.Graphics;
@@ -49,7 +56,7 @@ public sealed class ShipShieldOverlay : Overlay
         while (enumerator.MoveNext(out var uid, out var visuals, out var fixtures, out var xform))
         {
             // WOLFGATE(ShipShields) START: Hull shields use their own contour overlay.
-            if (_entManager.HasComponent<Content.Shared._WF.ShipShields.WFShipShieldVisualsComponent>(uid))
+            if (_entManager.HasComponent<Content.Shared._WG.ShipShields.WGShipShieldVisualsComponent>(uid))
                 continue;
             // WOLFGATE END
 

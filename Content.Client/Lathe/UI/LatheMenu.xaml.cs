@@ -55,6 +55,7 @@ public sealed partial class LatheMenu : FancyWindow
     public LatheMenu()
     {
         RobustXamlLoader.Load(this);
+        Content.Client._WG.Branding.WGWindowBranding.Apply(this); // WOLFGATE(Branding): Wolfgate title bar
         IoCManager.InjectDependencies(this);
 
         _spriteSystem = _entityManager.System<SpriteSystem>();
@@ -405,9 +406,13 @@ public sealed partial class LatheMenu : FancyWindow
 
         foreach (var containedEnt in storage.Contents.ContainedEntities)
         {
-            if ( _entityManager.GetComponent<MetaDataComponent>(containedEnt).EntityPrototype is not { } proto
-                || proto.ID != recipeEnt)
+            // WOLFGATE(Lathe) START: variants and other stacks of a part count, as the server counts them
+            // if ( _entityManager.GetComponent<MetaDataComponent>(containedEnt).EntityPrototype is not { } proto
+            //     || proto.ID != recipeEnt)
+            //     continue;
+            if (!FabricationSilo.IsRecipePart(containedEnt, recipeEnt))
                 continue;
+            // WOLFGATE END
 
             if (_entityManager.TryGetComponent<StackComponent>(containedEnt, out var stack))
                 count += stack.Count;

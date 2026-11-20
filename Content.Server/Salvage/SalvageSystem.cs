@@ -57,6 +57,7 @@ namespace Content.Server.Salvage
             InitializeExpeditions();
             InitializeMagnet();
             InitializeRunner();
+            WgInitializePlanetExpeditions(); // WOLFGATE(PlanetExpeditions)
         }
 
         // Frontier
@@ -79,6 +80,7 @@ namespace Content.Server.Salvage
             UpdateExpeditions();
             UpdateMagnet();
             UpdateRunner();
+            WgUpdatePlanetExpeditions(); // WOLFGATE(PlanetExpeditions)
         }
     }
 }

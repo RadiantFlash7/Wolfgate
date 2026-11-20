@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Content.Server.Administration.Logs;
+using Content.Server._WG.Remade.Gifts; // WOLFGATE(Remade)
 using Content.Server.Atmos.EntitySystems;
 using Content.Server.Construction; // Frontier
 using Content.Server.Fluids.EntitySystems;
@@ -126,7 +127,10 @@ namespace Content.Server.Lathe
             while (query.MoveNext(out var uid, out var comp, out var lathe))
             {
                 if (lathe.CurrentRecipe == null)
+                {
+                    FinishProducing(uid, lathe); // WOLFGATE(Lathe): a lathe saved mid-print loads with no recipe and would never start again
                     continue;
+                } // WOLFGATE(Lathe): a lathe saved mid-print loads with no recipe and would never start again
 
                 if (_timing.CurTime - comp.StartTime >= comp.ProductionLength)
                     FinishProducing(uid, lathe);
@@ -405,6 +409,11 @@ namespace Content.Server.Lathe
 
                             // Mono: Handle printable contraband
                             _contraband.HandleContrabandValueByCompany(result, prodComp.Actor);
+
+                            // WOLFGATE(Remade) START: lets a print from Monolith-made stock mark its product unsellable
+                            var printedEv = new WGLatheProducedEvent(result);
+                            RaiseLocalEvent(uid, ref printedEv);
+                            // WOLFGATE END
                         }
 
                         _stack.TryMergeToContacts(result);
@@ -457,6 +466,10 @@ namespace Content.Server.Lathe
         public void UpdateUserInterfaceState(EntityUid uid, LatheComponent? component = null)
         {
             if (!Resolve(uid, ref component))
+                return;
+
+            // WOLFGATE(NetTraffic): closed windows get no state; LatheSupplySystem sets it on BoundUIOpenedEvent
+            if (!_uiSys.IsUiOpen(uid, LatheUiKey.Key))
                 return;
 
             // WOLFGATE(Lathe) START: a queued batch waiting for supplies is not being fabricated

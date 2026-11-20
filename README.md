@@ -1,5 +1,5 @@
 <!-- WOLFGATE(Branding) START: rebrand from Monolith to Wolfgate -->
-<p align="center"><img alt="Wolfgate" width="800" height="266" src="Resources/Textures/_WF/Branding/Logo/logo.png" /></p>
+<p align="center"><img alt="Wolfgate" width="800" height="266" src="Resources/Textures/_WG/Branding/Logo/logo.png" /></p>
 
 Wolfgate is a fork of [Monolith](https://github.com/Monolith-Station/Monolith), itself a fork of [Frontier Station 14](https://github.com/new-frontiers-14/frontier-station-14), running on the [Robust Toolbox](https://github.com/space-wizards/RobustToolbox) engine written in C#.
 
@@ -19,10 +19,13 @@ If you want to host or create content for Wolfgate, this is the repo you need. I
 ## Contributing
 
 <!-- WOLFGATE(Branding) START: rebrand contributing section -->
-Contributions are welcome. Wolfgate-specific code lives in `_WF` folders, and edits to upstream files are marked with `// WOLFGATE` comments so they are easy to find when merging from Monolith.
+Contributions are welcome. Wolfgate-specific code lives in `_WG` folders, and edits to upstream files are marked with `// WOLFGATE` comments so they are easy to find when merging from Monolith.
 
 We are not accepting translations on this repository.
 <!-- WOLFGATE END -->
+
+<!-- WOLFGATE(Contributing): link the AI content policy -->
+AI use in contributions is covered by the [AI-generated content policy](Docs/_WG/Contributing/AI_POLICY.md).
 
 ## Building
 
@@ -82,5 +85,5 @@ Some assets are licensed under the non-commercial [CC-BY-NC-SA 3.0](https://crea
 <!-- WOLFGATE START: credit the Starlight licence and the Goonstation-derived reactor -->
 Code under `_Starlight` folders, and the Starlight-derived parts of `_FarHorizons`, was contributed to Starlight between 2024-11-04 and 2026-02-28 and is under the Starlight License (Wolfgate's own edits there are marked `WOLFGATE` and are under the AGPL), a modified MIT license that requires attributing the Starlight project as its source: https://github.com/ss14Starlight/space-station-14. See `LICENSES/LicenseRef-Starlight.txt`.
 
-The nuclear reactor code under `_FarHorizons/Power/Generation/FissionGenerator` is ported from Goonstation and is under [CC-BY-NC-SA 3.0](https://creativecommons.org/licenses/by-nc-sa/3.0/), as are assets whose metadata names Goonstation as their source.
+The nuclear reactor code under `_FarHorizons/Power/Generation/FissionGenerator` is ported from Goonstation and is labelled MIT, following HardLight commit b602e8d485, which records permission from jhrushbe, rottenheadphones and taydeo. Assets whose metadata names Goonstation as their source are under [CC-BY-NC-SA 3.0](https://creativecommons.org/licenses/by-nc-sa/3.0/).
 <!-- WOLFGATE END -->

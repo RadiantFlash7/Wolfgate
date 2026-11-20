@@ -16,12 +16,13 @@ book-text-holoparasite-info = Thanks for choosing our holoparasite package!
       WARNING: Guardians are metaphysical beings, but draw from your HEALTH in order to exist. Direct damage done to guardians will be partially transferred to you!
       Cybersun inc. is not responsible for complete annihilation following the misuse of Holoparasite technology.
 
+# WOLFGATE: the engine is the IRE everywhere else in game, so this note says IRE too
 book-text-ame-scribbles = I don't know if you're trained already, so I hope this'll help.
-      AME controller needs LV power and an HV wire to output to. Check the area with a crowbar if you aren't sure.
-      There should be an empty room next to where you found this, that room's wired for the AME.
-      You can put an AME anywhere if you can get the wires to it, though.
-      3x3 grid of AME parts, multitool them to unpack. Be careful not to 'trap' anything.
-      AME controller adjacent horizontally or vertically (not diagonally) to any point.
+      IRE controller needs LV power and an HV wire to output to. Check the area with a crowbar if you aren't sure.
+      There should be an empty room next to where you found this, that room's wired for the IRE.
+      You can put an IRE anywhere if you can get the wires to it, though.
+      3x3 grid of IRE parts, multitool them to unpack. Be careful not to 'trap' anything.
+      IRE controller adjacent horizontally or vertically (not diagonally) to any point.
       With only 1 core (what a 3x3 grid will get you), don't turn it up above 2.
       The golden rule is 2 injection for every 1 core. You can go lower to save fuel.
       Higher will burn the engine out and eventually make it explode. Don't.
@@ -125,6 +126,7 @@ book-text-cargo-depot-tradecrates = MANIFEST
       This paper will automatically disintegrate after 2 minutes.
 
 
+# WOLFGATE(TradeGoods): the alt depot manifest lists the chemical supplies it makes medical supplies from
 book-text-cargo-depot-tradecrates-alt = MANIFEST
       AT THIS CHUTE (PER CRATE):
       - AMMO : $10000
@@ -134,20 +136,25 @@ book-text-cargo-depot-tradecrates-alt = MANIFEST
       - FIS. FUEL : $24000
       - SCRAP : $3000
       - SHIP COMPONENTS : $8000
+      - CHEMICAL SUPPLIES : $2000
 
       This paper will automatically disintegrate after 2 minutes.
 
 
+# WOLFGATE(TradeGoods): the CC manifest lists the merged Caelestinus chute table
 book-text-cargo-depot-trademall = MANIFEST
       AT THIS CHUTE (PER CRATE):
       - AMMO : $7000
       - SUPPLIES : $6000
-      - MED. SUPPLIES : $2500
+      - MED. SUPPLIES : $3000
       - CHEM. SUPPLIES : $5000
       - VOL. CHEM. SUPPLIES : $6000
       - FUS. FUEL : $12000
       - SCRAP : $4000
       - COMPONENTS : $4000
+      - SHIP COMPONENTS : $4500
+      - WEAPON PARTS : $8000
+      - EQUIPMENT : $3000
       - FERTILIZER : $4500
       - FABRIC : $5000
       - METALS : $5000

@@ -2,6 +2,8 @@ using Content.Shared.Gravity;
 using Content.Shared.Hands.Components;
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Interaction;
+using Content.Shared.Movement.Components; // WOLFGATE: drifting doesn't interrupt work on yourself
+using Content.Shared.Movement.Systems; // WOLFGATE: drifting doesn't interrupt work on yourself
 using Content.Shared.Physics;
 using Robust.Shared.Utility;
 
@@ -24,12 +26,25 @@ public abstract partial class SharedDoAfterSystem : EntitySystem
         var xformQuery = GetEntityQuery<TransformComponent>();
         var handsQuery = GetEntityQuery<HandsComponent>();
 
+        // WOLFGATE START: a finishing do-after can start one on another entity, which added to the query mid-loop and threw
+        _wgActive.Clear();
         var enumerator = EntityQueryEnumerator<ActiveDoAfterComponent, DoAfterComponent>();
         while (enumerator.MoveNext(out var uid, out var active, out var comp))
         {
+            _wgActive.Add((uid, active, comp));
+        }
+
+        foreach (var (uid, active, comp) in _wgActive)
+        {
+            if (active.LifeStage > ComponentLifeStage.Running || comp.LifeStage > ComponentLifeStage.Running)
+                continue;
+
             Update(uid, active, comp, time, xformQuery, handsQuery);
         }
+        // WOLFGATE END
     }
+
+    private readonly List<(EntityUid, ActiveDoAfterComponent, DoAfterComponent)> _wgActive = new(); // WOLFGATE: the do-afters to update this tick, taken before any runs
 
     protected void Update(
         EntityUid uid,
@@ -167,8 +182,14 @@ public abstract partial class SharedDoAfterSystem : EntitySystem
         if (args.Used is { } @using && !xformQuery.HasComp(@using))
             return true;
 
+        // WOLFGATE: drifting isn't moving, so it doesn't interrupt work on yourself or something you carry
+        var drifting = args.BreakOnMove
+            && (args.Target == null || args.Target == args.User || targetXform?.ParentUid == args.User)
+            && _gravity.IsWeightless(args.User)
+            && ((CompOrNull<InputMoverComponent>(args.User)?.HeldMoveButtons ?? MoveButtons.None) & MoveButtons.AnyDirection) == MoveButtons.None;
+
         // TODO: Re-use existing xform query for these calculations.
-        if (args.BreakOnMove && !(!args.BreakOnWeightlessMove && _gravity.IsWeightless(args.User)))
+        if (args.BreakOnMove && !drifting && !(!args.BreakOnWeightlessMove && _gravity.IsWeightless(args.User))) // WOLFGATE: skipped while drifting
         {
             // Whether the user has moved too much from their original position.
             if (!_transform.InRange(userXform.Coordinates, doAfter.UserPosition, args.MovementThreshold))

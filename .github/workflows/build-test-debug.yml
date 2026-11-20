@@ -15,7 +15,7 @@ on:
 jobs:
   build:
     if: github.event.pull_request.draft == false
-    # WOLFGATE(Ci) START: split the integration tests over three runners; each builds and runs one shard
+    # WOLFGATE(Ci) START: split the integration tests over six runners; each builds and runs one shard
     # strategy:
     #   matrix:
     #     os: [ubuntu-latest]
@@ -23,16 +23,26 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        shard: [ wf-heavy, wf-rest, core ]
+        # Pinned: on ubuntu-26.04 the cockpit and console label-width tests fail with the same code.
+        os: [ubuntu-24.04]
+        shard: [ wg-heavy, wg-npc, wg-planets, wg-rest-a, wg-rest-b, core ]
+        # Balanced on per-module times from the NUnit XML, about 8 minutes of tests each.
         include:
-        - shard: wf-heavy
-          where: "test =~ 'Tests[.]_WF[.](Wolfmed|Encounters|NpcCrew|Vehicles)[.]'"
-        - shard: wf-rest
-          where: "test =~ 'Tests[.]_WF[.]' && test !~ 'Tests[.]_WF[.](Wolfmed|Encounters|NpcCrew|Vehicles|RoundSetup)[.]' && test !~ ShipyardTest"
-        # Upstream and other forks, plus RoundSetup; Content.Tests runs here too.
+        - shard: wg-heavy
+          where: "test =~ 'Tests[.]_WG[.](Wolfmed|Vehicles|Remade|AdsIncursion)[.]'"
+        - shard: wg-npc
+          where: "test =~ 'Tests[.]_WG[.](Encounters|NpcCrew|RoundSetup)[.]'"
+        # Whole worlds built per test: on one runner with the rest they ran it out of memory.
+        - shard: wg-planets
+          where: "test =~ 'Tests[.]_WG[.](Planet[A-Za-z]*|Caverns|LivingWorld|SandMaw|ReaverCampaign|Administration)[.]'"
+        # The rest of _WG, split by module name: as one shard (about 2,300 tests) it ran its runner out of memory.
+        - shard: wg-rest-a
+          where: "test =~ 'Tests[.]_WG[.][A-L]' && test !~ 'Tests[.]_WG[.](Wolfmed|Vehicles|Remade|AdsIncursion|Encounters|NpcCrew|RoundSetup|Planet[A-Za-z]*|Caverns|LivingWorld|SandMaw|ReaverCampaign|Administration)[.]' && test !~ ShipyardTest"
+        - shard: wg-rest-b
+          where: "test =~ 'Tests[.]_WG[.]' && test !~ 'Tests[.]_WG[.][A-L]' && test !~ 'Tests[.]_WG[.](Wolfmed|Vehicles|Remade|AdsIncursion|Encounters|NpcCrew|RoundSetup|Planet[A-Za-z]*|Caverns|LivingWorld|SandMaw|ReaverCampaign|Administration)[.]' && test !~ ShipyardTest"
+        # Upstream and other forks; Content.Tests runs here too.
         - shard: core
-          where: "(test !~ 'Tests[.]_WF[.]' || test =~ 'Tests[.]_WF[.]RoundSetup[.]') && test !~ ShipyardTest"
+          where: "test !~ 'Tests[.]_WG[.]' && test !~ ShipyardTest"
           unit: true
     # WOLFGATE END
 
@@ -78,7 +88,9 @@ jobs:
         # dotnet test --no-build --configuration DebugOpt Content.IntegrationTests/Content.IntegrationTests.csproj --filter "FullyQualifiedName!~ShipyardTest" -- NUnit.ConsoleOut=0 NUnit.MapWarningTo=Failed NUnit.TestOutputXml="logs" NUnit.WorkDirectory="$(pwd)/test_results"
         # dotnet test --no-build --configuration DebugOpt Content.IntegrationTests/Content.IntegrationTests.csproj -- 'NUnit.Where=test !~ ShipyardTest' NUnit.ConsoleOut=0 NUnit.MapWarningTo=Failed NUnit.TestOutputXml="logs" NUnit.WorkDirectory="$(pwd)/test_results"
         # Each shard's filter comes from the matrix; together they cover every test but the Shipyard ones.
-        dotnet test --no-build --configuration DebugOpt Content.IntegrationTests/Content.IntegrationTests.csproj -- "NUnit.Where=${{ matrix.where }}" NUnit.ConsoleOut=0 NUnit.MapWarningTo=Failed NUnit.TestOutputXml="logs" NUnit.WorkDirectory="$(pwd)/test_results"
+        # dotnet test --no-build --configuration DebugOpt Content.IntegrationTests/Content.IntegrationTests.csproj -- "NUnit.Where=${{ matrix.where }}" NUnit.ConsoleOut=0 NUnit.MapWarningTo=Failed NUnit.TestOutputXml="logs" NUnit.WorkDirectory="$(pwd)/test_results"
+        # Above AssemblySelectLimit (default 2000) the adapter runs the whole assembly and only hides the extra results.
+        dotnet test --no-build --configuration DebugOpt Content.IntegrationTests/Content.IntegrationTests.csproj -- "NUnit.Where=${{ matrix.where }}" NUnit.AssemblySelectLimit=100000 NUnit.ConsoleOut=0 NUnit.MapWarningTo=Failed NUnit.TestOutputXml="logs" NUnit.WorkDirectory="$(pwd)/test_results"
         # WOLFGATE END
 
     - name: Archive NUnit3 test results.

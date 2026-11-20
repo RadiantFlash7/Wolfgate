@@ -1,8 +1,13 @@
+# WOLFGATE: restore the licence header removed by Kill Spdx
+# SPDX-FileCopyrightText: 2025 kyres1
+#
+# SPDX-License-Identifier: MPL-2.0
+
 - type: tile
   id: DebugLatticeRadarHalfWidth
   parent: Lattice
   name: debug radar half width lattice
-  sprite: /Textures/_WF/Resprites/Wizden/Tiles/lattice.png #WOLFGATE(Resprites): Repathed
+  sprite: /Textures/_WG/Resprites/Wizden/Tiles/lattice.png #WOLFGATE(Resprites): Repathed
   vertices: ["0.25, 0", "0.75, 0", "0.75, 1", "0.25, 1"]
 
 - type: tile
@@ -45,7 +50,7 @@
   id: PlatingCornerNE
   parent: PlatingSpace
   name: NE plating
-  sprite: /Textures/_Mono/Tiles/plating/ne.png
+  sprite: /Textures/_WG/Resprites/_WG/Tiles/ne.png #WOLFGATE(Resprites): Repathed
   variants: 1 #WOLFGATE(Resprites): Needed to not crash
   vertices: ["1, 0", "1, 1", "0, 1"]
 
@@ -53,7 +58,7 @@
   id: PlatingCornerNW
   parent: PlatingSpace
   name: NW plating
-  sprite: /Textures/_Mono/Tiles/plating/nw.png
+  sprite: /Textures/_WG/Resprites/_WG/Tiles/nw.png #WOLFGATE(Resprites): Repathed
   variants: 1 #WOLFGATE(Resprites): Needed to not crash
   vertices: ["0, 0", "1, 1", "0, 1"]
 
@@ -61,7 +66,7 @@
   id: PlatingCornerSE
   parent: PlatingSpace
   name: SE plating
-  sprite: /Textures/_Mono/Tiles/plating/se.png
+  sprite: /Textures/_WG/Resprites/_WG/Tiles/se.png #WOLFGATE(Resprites): Repathed
   variants: 1 #WOLFGATE(Resprites): Needed to not crash
   vertices: ["0, 0", "1, 0", "1, 1"]
 
@@ -69,6 +74,6 @@
   id: PlatingCornerSW
   parent: PlatingSpace
   name: SW plating
-  sprite: /Textures/_Mono/Tiles/plating/sw.png
+  sprite: /Textures/_WG/Resprites/_WG/Tiles/sw.png #WOLFGATE(Resprites): Repathed
   variants: 1 #WOLFGATE(Resprites): Needed to not crash
   vertices: ["0, 0", "1, 0", "0, 1"]

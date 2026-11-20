@@ -278,10 +278,12 @@ public sealed partial class StaminaSystem : EntitySystem
         || value == 0) // no damage???
             return;
 
-        var ev = new BeforeStaminaDamageEvent(value);
+        var ev = new BeforeStaminaDamageEvent(value, Source: source, With: with); // WOLFGATE(Augments): who dealt it and with what, for the hand shield
         RaiseLocalEvent(uid, ref ev);
         if (ev.Cancelled)
             return;
+
+        value = ev.Value; // WOLFGATE(MeridianTraits): handlers may scale the damage, as a dormant hemophage's tumor does
 
         // Have we already reached the point of max stamina damage?
         if (component.Critical && immediate)
@@ -439,4 +441,4 @@ public sealed partial class StaminaSystem : EntitySystem
 ///     Raised before stamina damage is dealt to allow other systems to cancel it.
 /// </summary>
 [ByRefEvent]
-public record struct BeforeStaminaDamageEvent(float Value, bool Cancelled = false);
+public record struct BeforeStaminaDamageEvent(float Value, bool Cancelled = false, EntityUid? Source = null, EntityUid? With = null); // WOLFGATE(Augments): source and weapon, for the hand shield

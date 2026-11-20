@@ -93,7 +93,7 @@ public sealed partial class ShuttleMapControl : BaseShuttleControl
     private readonly Dictionary<Color, List<(Vector2, string, bool)>> _strings = new();
     private readonly List<ShuttleExclusionObject> _viewportExclusions = new();
 
-    public ShuttleMapControl() : base(256f, 4096f, 512f)
+    public ShuttleMapControl() : base(256f, 32768f, 512f) // WOLFGATE: zoom out past the 5-25k FTL drive ranges
     {
         RobustXamlLoader.Load(this);
         _detection = EntManager.System<DetectionSystem>(); // Mono
@@ -104,6 +104,7 @@ public sealed partial class ShuttleMapControl : BaseShuttleControl
         _physicsQuery = EntManager.GetEntityQuery<PhysicsComponent>();
 
         _font = new VectorFont(cache.GetResource<FontResource>("/EngineFonts/NotoSans/NotoSans-Regular.ttf"), 10);
+        WgAddPlanetScanner(); // WOLFGATE(PlanetScan): hovering a world opens its scan.
     }
 
     public void SetMap(MapId mapId, Vector2 offset, bool recentering = false)
@@ -167,7 +168,7 @@ public sealed partial class ShuttleMapControl : BaseShuttleControl
             _ftlAngle -= Angle.FromDegrees(15f) * args.Delta.Y; // Mono Edit: Subtract instead of add to preserve clockwise rotation when scrolling up. (positive angles are actually counter-clockwise)
             _ftlAngle = _ftlAngle.Reduced();
             // WOLFGATE(Cockpit): rotating an FTL destination must not also scroll its MFD page.
-            if (WfCockpitControls)
+            if (WgCockpitControls)
                 args.Handle();
             return;
         }
@@ -277,7 +278,10 @@ public sealed partial class ShuttleMapControl : BaseShuttleControl
             return;
         }
 
-        DrawParallax(handle);
+        // WOLFGATE(Planets) START: over a world, the world fills the plot instead of space.
+        if (!DrawWgPlanetBackground(handle, _mapManager.GetMapOrInvalid(ViewingMap)))
+            DrawParallax(handle);
+        // WOLFGATE END
 
         var viewedMapUid = _mapManager.GetMapOrInvalid(ViewingMap);
         var matty = Matrix3Helpers.CreateInverseTransform(Offset, Angle.Zero);

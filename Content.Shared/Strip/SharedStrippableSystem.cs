@@ -1,3 +1,17 @@
+// WOLFGATE: restore the licence header removed by Kill Spdx
+// SPDX-FileCopyrightText: 2023 DrSmugleaf
+// SPDX-FileCopyrightText: 2024 Krunklehorn
+// SPDX-FileCopyrightText: 2024 Leon Friedrich
+// SPDX-FileCopyrightText: 2024 Nemanja
+// SPDX-FileCopyrightText: 2024 Pieter-Jan Briers
+// SPDX-FileCopyrightText: 2024 ShadowCommander
+// SPDX-FileCopyrightText: 2024 metalgearsloth
+// SPDX-FileCopyrightText: 2024 to4no_fix
+// SPDX-FileCopyrightText: 2025 Ark
+// SPDX-FileCopyrightText: 2025 ark1368
+//
+// SPDX-License-Identifier: MPL-2.0
+
 using System.Linq;
 using Content.Shared.Administration.Logs;
 using Content.Shared.CombatMode;
@@ -33,6 +47,8 @@ public abstract partial class SharedStrippableSystem : EntitySystem
     [Dependency] private SharedPopupSystem _popupSystem = default!;
 
     [Dependency] private ISharedAdminLogManager _adminLogger = default!;
+
+    [Dependency] private SharedInteractionSystem _interactionSystem = default!; // WOLFGATE(InteractionParticles)
 
     public override void Initialize()
     {
@@ -295,6 +311,7 @@ public abstract partial class SharedStrippableSystem : EntitySystem
 
         if (!stealth)
         {
+            _interactionSystem.SpawnInteractionParticle(user, target, null, true); // WOLFGATE(InteractionParticles)
             if (IsStripHidden(slotDef, user))
                 _popupSystem.PopupEntity(Loc.GetString("strippable-component-alert-owner-hidden", ("slot", slot)), target, target, PopupType.Large);
             else
@@ -504,7 +521,10 @@ public abstract partial class SharedStrippableSystem : EntitySystem
         var (time, stealth) = GetStripTimeModifiers(user, target, null, targetStrippable.HandStripDelay);
 
         if (!stealth)
+        {
+            _interactionSystem.SpawnInteractionParticle(user, target, null, true); // WOLFGATE(InteractionParticles)
             _popupSystem.PopupEntity(Loc.GetString("strippable-component-alert-owner", ("user", Identity.Entity(user, EntityManager)), ("item", item)), target, target);
+        } // WOLFGATE(InteractionParticles)
 
         var prefix = stealth ? "stealthily " : "";
         _adminLogger.Add(LogType.Stripping, LogImpact.Low, $"{ToPrettyString(user):actor} is trying to {prefix}strip the item {ToPrettyString(item):item} from {ToPrettyString(target):target}'s hands");
@@ -608,7 +628,8 @@ public abstract partial class SharedStrippableSystem : EntitySystem
     /// <summary>
     /// Modify the strip time via events. Raised directed at the item being stripped, the player stripping someone and the player being stripped.
     /// </summary>
-    public (TimeSpan Time, bool Stealth) GetStripTimeModifiers(EntityUid user, EntityUid targetPlayer, EntityUid? targetItem, TimeSpan initialTime)
+    /// <param name="notifyCrew">WOLFGATE(InteractionParticles): false when only the stealth flag is wanted, without telling the target's crew they are being robbed.</param>
+    public (TimeSpan Time, bool Stealth) GetStripTimeModifiers(EntityUid user, EntityUid targetPlayer, EntityUid? targetItem, TimeSpan initialTime, bool notifyCrew = true)
     {
         var itemEv = new BeforeItemStrippedEvent(initialTime, false);
         if (targetItem != null)
@@ -617,8 +638,11 @@ public abstract partial class SharedStrippableSystem : EntitySystem
         RaiseLocalEvent(user, ref userEv);
         var targetEv = new BeforeGettingStrippedEvent(userEv.Time, userEv.Stealth);
         RaiseLocalEvent(targetPlayer, ref targetEv);
-        var wfStripped = new Content.Shared._WF.NpcCrew.WFStripAttemptEvent(user, targetEv.Stealth); // WOLFGATE(NpcCrew): the one being stripped learns who is doing it
-        RaiseLocalEvent(targetPlayer, ref wfStripped); // WOLFGATE(NpcCrew)
+        if (notifyCrew) // WOLFGATE(InteractionParticles)
+        {
+            var wgStripped = new Content.Shared._WG.NpcCrew.WGStripAttemptEvent(user, targetEv.Stealth); // WOLFGATE(NpcCrew): the one being stripped learns who is doing it
+            RaiseLocalEvent(targetPlayer, ref wgStripped); // WOLFGATE(NpcCrew)
+        }
         return (targetEv.Time, targetEv.Stealth);
     }
 
@@ -639,6 +663,20 @@ public abstract partial class SharedStrippableSystem : EntitySystem
 
         if (!HasComp<StrippingComponent>(user))
             return false;
+
+        // WOLFGATE(InteractionParticles) START: tell the target someone is looking through their things, and show the particle
+        // Check first so the popup cannot be spammed while the menu is already open.
+        var (_, stealth) = GetStripTimeModifiers(user, target, null, target.Comp.HandStripDelay, notifyCrew: false); // WOLFGATE(InteractionParticles)
+        if (!stealth && !_ui.IsUiOpen(target.Owner, StrippingUiKey.Key))
+        {
+            _popupSystem.PopupCoordinates(
+                Loc.GetString("strip-menu-viewing-message", ("user", Identity.Entity(user, EntityManager))),
+                Transform(user).Coordinates,
+                target.Owner);
+
+            _interactionSystem.SpawnInteractionParticle(user, target, null, true);
+        }
+        // WOLFGATE END
 
         _ui.OpenUi(target.Owner, StrippingUiKey.Key, user);
         return true;

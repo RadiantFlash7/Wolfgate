@@ -9,8 +9,8 @@ using Content.Shared.FixedPoint;
 using Content.Shared.Humanoid;
 using Content.Shared.Rejuvenate;
 using Content.Shared._Onyx.Chemistry.Circulation;
-using Content.Shared._WF.Wolfmed.Compat; // WOLFGATE(Wolfmed): D12 damage facade.
-using Content.Shared._WF.Wolfmed.Wounds; // WOLFGATE(Wolfmed): W5: the rejuvenate relay.
+using Content.Shared._WG.Wolfmed.Compat; // WOLFGATE(Wolfmed): D12 damage facade.
+using Content.Shared._WG.Wolfmed.Wounds; // WOLFGATE(Wolfmed): W5: the rejuvenate relay.
 using Robust.Shared.Network;
 
 namespace Content.Shared._Onyx.Wounds;
@@ -18,7 +18,7 @@ namespace Content.Shared._Onyx.Wounds;
 public sealed partial class WoundDamageProjectionSystem : EntitySystem
 {
     [Dependency] private SharedBodySystem _body = default!;
-    [Dependency] private WolfmedDamageableSystem _damage = default!; // WOLFGATE(Wolfmed): D12, Onyx-shaped damage API; see _WF/Wolfmed/Compat
+    [Dependency] private WolfmedDamageableSystem _damage = default!; // WOLFGATE(Wolfmed): D12, Onyx-shaped damage API; see _WG/Wolfmed/Compat
     [Dependency] private INetManager _net = default!;
     [Dependency] private PainSystem _pain = default!;
     // WOLFGATE(Wolfmed): D15 drops the CirculatoryStreamSystem dependency. Organic is the primary stream in phase 1, so
@@ -182,6 +182,11 @@ public sealed partial class WoundDamageProjectionSystem : EntitySystem
                 }
             }
             var visual = EnsureComp<PartDamageVisualsComponent>(body);
+            // WOLFGATE(Wolfmed): snapshot the old layers so an unchanged refresh can skip SetDamage and Dirty.
+            _visualSnapshot.Clear();
+            foreach (var (layer, spec) in visual.Damage)
+                _visualSnapshot[layer] = spec;
+
             visual.Damage.Clear();
             foreach (var (part, _) in _body.GetBodyChildren(body))
             {
@@ -199,6 +204,13 @@ public sealed partial class WoundDamageProjectionSystem : EntitySystem
                 }
             }
 
+            // WOLFGATE(Wolfmed) START: a refresh that changes neither the total nor the layers is a no-op.
+            if (TryComp(body, out DamageableComponent? bodyDamageable)
+                && total.Equals(bodyDamageable.Damage)
+                && VisualsUnchanged(visual))
+                return;
+            // WOLFGATE END
+
             _damage.SetDamage(body, total, origin); // WOLFGATE(Wolfmed): origin, for kill credit.
             Dirty(body, visual);
         }
@@ -207,6 +219,25 @@ public sealed partial class WoundDamageProjectionSystem : EntitySystem
             _projecting.Remove(body);
         }
     }
+
+    // WOLFGATE(Wolfmed) START: no-op refresh check.
+    private readonly Dictionary<HumanoidVisualLayers, DamageSpecifier> _visualSnapshot = new();
+
+    /// <summary>True when the rebuilt layer damage matches the snapshot taken before the rebuild.</summary>
+    private bool VisualsUnchanged(PartDamageVisualsComponent visual)
+    {
+        if (visual.Damage.Count != _visualSnapshot.Count)
+            return false;
+
+        foreach (var (layer, spec) in visual.Damage)
+        {
+            if (!_visualSnapshot.TryGetValue(layer, out var old) || !spec.Equals(old))
+                return false;
+        }
+
+        return true;
+    }
+    // WOLFGATE END
 
     private void SetupBody(EntityUid body)
     {

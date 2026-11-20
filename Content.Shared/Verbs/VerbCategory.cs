@@ -28,6 +28,8 @@ namespace Content.Shared.Verbs
         /// </remarks>
         public readonly bool IconsOnly;
 
+        public VerbCategory? Parent; // WOLFGATE(Photography): nested verb categories
+
         public VerbCategory(string text, string? icon, bool iconsOnly = false)
         {
             Text = Loc.GetString(text);
@@ -85,6 +87,9 @@ namespace Content.Shared.Verbs
         public static readonly VerbCategory SelectType = new("verb-categories-select-type", null);
 
         public static readonly VerbCategory PowerLevel = new("verb-categories-power-level", null);
+
+        // WOLFGATE(ItemSwitch): category for switching an item's appearance state
+        public static readonly VerbCategory Switch = new("verb-categories-switch", null);
 
         public static readonly VerbCategory Pen =
             new("verb-categories-pen", "/Textures/Interface/pencil.png");

@@ -37,6 +37,12 @@ public sealed partial class RadarBlipSystem : EntitySystem
         )
             return;
 
+        WGNoteRequest(args.SenderSession); // WOLFGATE(Performance): removals go only to sessions that asked recently
+        // WOLFGATE(Performance) START: the server caps how often it answers one player; the client's throttle is not enforced
+        if (!WGTakeRequest(args.SenderSession))
+            return;
+        // WOLFGATE END
+
         var sourcesEv = new GetRadarSourcesEvent();
         RaiseLocalEvent(radarUid.Value, ref sourcesEv);
 
@@ -65,8 +71,11 @@ public sealed partial class RadarBlipSystem : EntitySystem
     private void OnBlipShutdown(EntityUid blipUid, RadarBlipComponent component, ComponentShutdown args)
     {
         var netBlipUid = GetNetEntity(blipUid);
-        var removalEv = new BlipRemovalEvent(netBlipUid);
-        RaiseNetworkEvent(removalEv);
+        // WOLFGATE(Performance) START: send removals only to recent radar users, none during round cleanup
+        // var removalEv = new BlipRemovalEvent(netBlipUid);
+        // RaiseNetworkEvent(removalEv);
+        WGSendRemoval(netBlipUid);
+        // WOLFGATE END
     }
 
     private void AssembleBlipsReport(EntityUid uid, List<EntityUid> sources, RadarConsoleComponent? component = null)
@@ -78,15 +87,13 @@ public sealed partial class RadarBlipSystem : EntitySystem
         var radarGrid = radarXform.GridUid;
         var radarMapId = radarXform.MapID;
 
-        var blipQuery = EntityQueryEnumerator<RadarBlipComponent, TransformComponent, PhysicsComponent>();
-
-        while (blipQuery.MoveNext(out var blipUid, out var blip, out var blipXform, out var blipPhysics))
+        // WOLFGATE(Performance) START: radars share one walk of the blips per tick and skip the squares out of reach
+        // var blipQuery = EntityQueryEnumerator<RadarBlipComponent, TransformComponent, PhysicsComponent>();
+        foreach (var (blipUid, blip, blipXform, blipPhysics, _) in WGBlipsInReach(radarMapId, sources))
         {
-            if (!blip.Enabled
-                || blipXform.MapID != radarMapId
-                || !NearAnySources(_xform.GetWorldPosition(blipXform), sources, blip.MaxDistance)
-            )
+            if (blip.Deleted)
                 continue;
+        // WOLFGATE END
 
             var blipGrid = blipXform.GridUid;
 

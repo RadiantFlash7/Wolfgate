@@ -1,0 +1,27 @@
+- type: trait
+  id: Clown
+  name: trait-clown-name
+  description: trait-clown-desc
+  category: Physical
+  cost: 2
+  mutuallyExclusiveTraits:
+  - Mime
+  components:
+  - type: Clown
+  - type: Juggling
+
+- type: trait
+  id: Mime
+  name: trait-mime-name
+  description: trait-mime-desc
+  category: Physical
+  cost: 2
+  mutuallyExclusiveTraits:
+  - Clown
+  components:
+  - type: MimePowers
+    vowAlert: VowOfSilenceUnbreakable
+  - type: MimeAbilities
+    actions:
+    - ActionMimeInvisibleBox
+    - ActionMimeFingerGun

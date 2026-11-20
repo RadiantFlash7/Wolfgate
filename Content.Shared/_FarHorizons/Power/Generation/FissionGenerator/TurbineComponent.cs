@@ -3,13 +3,14 @@ using Robust.Shared.GameStates;
 using Content.Shared.Tools;
 using Content.Shared.Atmos;
 using Content.Shared.DeviceLinking;
-using Content.Shared._WF.EngineCompat;
+using Content.Shared._WG.EngineCompat;
 using System.Numerics;
 
 namespace Content.Shared._FarHorizons.Power.Generation.FissionGenerator;
 
 // Ported and modified from goonstation by Jhrushbe.
-// CC-BY-NC-SA-3.0
+// WOLFGATE: relabelled MIT as in HardLight b602e8d485
+// MIT
 // https://github.com/goonstation/goonstation/blob/ff86b044/code/obj/nuclearreactor/turbine.dm
 
 [RegisterComponent, NetworkedComponent, AutoGenerateComponentState]

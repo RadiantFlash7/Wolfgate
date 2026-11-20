@@ -1,3 +1,37 @@
+// WOLFGATE: restore the licence header removed by Kill Spdx
+// SPDX-FileCopyrightText: 2021 20kdc
+// SPDX-FileCopyrightText: 2021 Acruid
+// SPDX-FileCopyrightText: 2021 DrSmugleaf
+// SPDX-FileCopyrightText: 2021 Javier Guardia Fernández
+// SPDX-FileCopyrightText: 2021 Vera Aguilera Puerto
+// SPDX-FileCopyrightText: 2022 Alex Evgrashin
+// SPDX-FileCopyrightText: 2022 CommieFlowers
+// SPDX-FileCopyrightText: 2022 EmoGarbage404
+// SPDX-FileCopyrightText: 2022 Flipp Syder
+// SPDX-FileCopyrightText: 2022 Paul Ritter
+// SPDX-FileCopyrightText: 2022 Rane
+// SPDX-FileCopyrightText: 2022 ShadowCommander
+// SPDX-FileCopyrightText: 2022 Visne
+// SPDX-FileCopyrightText: 2022 mirrorcult
+// SPDX-FileCopyrightText: 2022 rolfero
+// SPDX-FileCopyrightText: 2022 wrexbe
+// SPDX-FileCopyrightText: 2023 Jezithyr
+// SPDX-FileCopyrightText: 2023 Kara
+// SPDX-FileCopyrightText: 2023 Leon Friedrich
+// SPDX-FileCopyrightText: 2023 Nemanja
+// SPDX-FileCopyrightText: 2023 PixelTK
+// SPDX-FileCopyrightText: 2023 Slava0135
+// SPDX-FileCopyrightText: 2023 deltanedas
+// SPDX-FileCopyrightText: 2023 metalgearsloth
+// SPDX-FileCopyrightText: 2024 Pieter-Jan Briers
+// SPDX-FileCopyrightText: 2025 ActiveMammmoth
+// SPDX-FileCopyrightText: 2025 Ark
+// SPDX-FileCopyrightText: 2025 SlamBamActionman
+// SPDX-FileCopyrightText: 2025 ark1368
+// SPDX-FileCopyrightText: 2025 starch
+//
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 using Content.Shared._FarHorizons.Damage; // WOLFGATE(Species)
 using Content.Shared._Shitmed.Targeting;
 // Shitmed Change
@@ -5,7 +39,7 @@ using Content.Shared.Body.Systems;
 using Content.Shared.CCVar;
 using Content.Shared.Chemistry;
 using Content.Shared.Damage.Prototypes;
-using Content.Shared._WF.Wolfmed.Compat; // WOLFGATE(Wolfmed): Wolfmed routing seam event (DamageDealtEvent).
+using Content.Shared._WG.Wolfmed.Compat; // WOLFGATE(Wolfmed): Wolfmed routing seam event (DamageDealtEvent).
 using Content.Shared._Onyx.Wounds; // WOLFGATE(Wolfmed): Wolfmed routing seam gate (WoundHostComponent).
 using Content.Shared.Explosion.EntitySystems;
 using Content.Shared.FixedPoint;
@@ -22,7 +56,7 @@ using Robust.Shared.Random;
 using Robust.Shared.Utility;
 using System.Linq;
 using static Content.Shared.Damage.DamageableSystem;
-using Content.Shared._WF.RMCCore.Damage; // WOLFGATE(RMCCore)
+using Content.Shared._WG.RMCCore.Damage; // WOLFGATE(RMCCore)
 
 namespace Content.Shared.Damage
 {
@@ -37,6 +71,7 @@ namespace Content.Shared.Damage
         [Dependency] private IConfigurationManager _config = default!;
         [Dependency] private SharedChemistryGuideDataSystem _chemistryGuideData = default!;
         [Dependency] private SharedExplosionSystem _explosion = default!;
+        [Dependency] private Content.Shared._WG.NetTraffic.WGDamageNetSystem _wgDamageNet = default!; // WOLFGATE(NetTraffic)
 
         private EntityQuery<AppearanceComponent> _appearanceQuery;
         private EntityQuery<DamageableComponent> _damageableQuery;
@@ -112,6 +147,15 @@ namespace Content.Shared.Damage
             {
                 // Initialize damage dictionary, using the types and groups from the damage
                 // container prototype
+                // WOLFGATE(Performance) START: size the dictionary once instead of growing it from empty on every spawn
+                var wgCapacity = damageContainerPrototype.SupportedTypes.Count;
+                foreach (var groupId in damageContainerPrototype.SupportedGroups)
+                {
+                    wgCapacity += _prototypeManager.Index<DamageGroupPrototype>(groupId).DamageTypes.Count;
+                }
+
+                component.Damage.DamageDict.EnsureCapacity(wgCapacity);
+                // WOLFGATE END
                 foreach (var type in damageContainerPrototype.SupportedTypes)
                 {
                     component.Damage.DamageDict.TryAdd(type, FixedPoint2.Zero);
@@ -129,6 +173,7 @@ namespace Content.Shared.Damage
             else
             {
                 // No DamageContainerPrototype was given. So we will allow the container to support all damage types
+                component.Damage.DamageDict.EnsureCapacity(_prototypeManager.Count<DamageTypePrototype>()); // WOLFGATE(Performance): size once
                 foreach (var type in _prototypeManager.EnumeratePrototypes<DamageTypePrototype>())
                 {
                     component.Damage.DamageDict.TryAdd(type.ID, FixedPoint2.Zero);
@@ -164,9 +209,11 @@ namespace Content.Shared.Damage
         {
             component.Damage.GetDamagePerGroup(_prototypeManager, component.DamagePerGroup);
             component.TotalDamage = component.Damage.GetTotal();
+            var wgDeferred = _wgDamageNet.Defer(uid); // WOLFGATE(NetTraffic): a structure's damage is sent at most once an interval.
+            if (!wgDeferred) // WOLFGATE(NetTraffic)
             Dirty(uid, component);
 
-            if (_appearanceQuery.TryGetComponent(uid, out var appearance) && damageDelta != null)
+            if (!wgDeferred && _appearanceQuery.TryGetComponent(uid, out var appearance) && damageDelta != null) // WOLFGATE(NetTraffic): sent with the deferred damage.
             {
                 var data = new DamageVisualizerGroupData(component.DamagePerGroup.Keys.ToList());
                 _appearance.SetData(uid, DamageVisualizerKeys.DamageUpdateGroups, data, appearance);

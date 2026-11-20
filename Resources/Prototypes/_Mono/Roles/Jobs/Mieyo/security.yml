@@ -15,7 +15,7 @@
       time: 108000 # 30 hours
   startingGear: MMCSecurityGear
   alwaysUseSpawner: true
-  hideConsoleVisibility: true
+# hideConsoleVisibility: true
   icon: "JobIconMMCSecurity"
   supervisors: job-supervisors-mmc-liason
   assignedCompany: MMC
@@ -38,6 +38,9 @@
       factions:
       - MMC
     - type: RadioOnCryosleep
+      radioChannel: Mieyo
+# WOLFGATE(Roles): reports arrivals on the MMC radio, since the job spawner skips the station announcement
+    - type: WGRadioOnJoin
       radioChannel: Mieyo
   - !type:AddLanguageSpecial
     languagesSpoken:
