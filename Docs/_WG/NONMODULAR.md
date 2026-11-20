@@ -465,7 +465,15 @@ Standalone edits outside `_WG` that serve no module: files with an untagged `WOL
 - [`Resources/Prototypes/_DV/Catalog/Jukebox/Standard.yml`](../../Resources/Prototypes/_DV/Catalog/Jukebox/Standard.yml): licence does not cover this fork, track removed
 - [`Resources/Prototypes/_DV/Entities/Objects/Weapons/Guns/Projectiles/muzzleflashes.yml`](../../Resources/Prototypes/_DV/Entities/Objects/Weapons/Guns/Projectiles/muzzleflashes.yml): restore the licence header removed by Kill Spdx
 - [`Resources/Prototypes/_Funkystation/Atmospherics/gases.yml`](../../Resources/Prototypes/_Funkystation/Atmospherics/gases.yml): healium is a small premium on the frezon it takes, 18 -> 6 (Mono 3\<18)
+- [`Resources/Prototypes/_Goobstation/Body/Parts/tajaran.yml`](../../Resources/Prototypes/_Goobstation/Body/Parts/tajaran.yml): 5% faster sprint than the base leg
+- [`Resources/Prototypes/_Goobstation/Damage/modifier_sets.yml`](../../Resources/Prototypes/_Goobstation/Damage/modifier_sets.yml): no extra brute damage (was 1.15), unlike felinids; heat and cold unchanged
 - [`Resources/Prototypes/_Goobstation/Entities/Clothing/Eyes/glasses.yml`](../../Resources/Prototypes/_Goobstation/Entities/Clothing/Eyes/glasses.yml): an invalid default leaves the chameleon menu empty
+- [`Resources/Prototypes/_Goobstation/Entities/Mobs/Species/tajaran.yml`](../../Resources/Prototypes/_Goobstation/Entities/Mobs/Species/tajaran.yml)
+  - full-size sprite, matching the human-size hitbox
+  - claws deal only Slash, unlike felinids
+  - no duffel bag; the species base's bag shape is too big for one
+  - no hairball or eat-mouse actions
+  - no scream when wet
 - [`Resources/Prototypes/_Goobstation/Entities/Objects/Devices/Circuitboards/machine.yml`](../../Resources/Prototypes/_Goobstation/Entities/Objects/Devices/Circuitboards/machine.yml)
   - restore the licence header removed by Kill Spdx
   - a machine part under stackRequirements can't be inserted; the frame reads parts from requirements
@@ -693,6 +701,7 @@ Standalone edits outside `_WG` that serve no module: files with an untagged `WOL
 - [`Resources/ServerInfo/Guidebook/Engineering/Power.xml`](../../Resources/ServerInfo/Guidebook/Engineering/Power.xml): the engine is the IRE everywhere else in game
 - [`Resources/ServerInfo/Guidebook/Engineering/SolarPanels.xml`](../../Resources/ServerInfo/Guidebook/Engineering/SolarPanels.xml): the engine is the IRE everywhere else in game
 - [`Resources/ServerInfo/Guidebook/Mobs/Diona.xml`](../../Resources/ServerInfo/Guidebook/Mobs/Diona.xml): Monolith gave Diona a shoe slot, and FTL knockdown immunity is back
+- [`Resources/ServerInfo/Guidebook/Mobs/Tajaran.xml`](../../Resources/ServerInfo/Guidebook/Mobs/Tajaran.xml): Tajarans split further from felinids
 - [`Resources/ServerInfo/Guidebook/ServerRules/CoreRules/RuleC0.xml`](../../Resources/ServerInfo/Guidebook/ServerRules/CoreRules/RuleC0.xml)
   - ERP is allowed, rule 4 only covers shock content
   - was 16

@@ -86,7 +86,8 @@
 
 - type: damageModifierSet
   id: Tajaran
-  coefficients: # WOLFGATE: Tajarans are more resistant to heat, but more vulnerable to cold, differing in brute injury intake from felinids.
+  coefficients: # Literally the same as felinids, but heat and cold cuz fur
+    # WOLFGATE: no extra brute damage (was 1.15), unlike felinids; heat and cold unchanged
     Blunt: 1.0
     Slash: 1.0
     Piercing: 1.0
