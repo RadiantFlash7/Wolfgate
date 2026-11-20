@@ -8,7 +8,6 @@
     baseDecayRate: 0.02083333332 # 25% more than default #Mono its not actually 25% but about 15.74%, 0.0225 would be 25% more than base
   - type: Thirst
   - type: Sprite
-    scale: 0.8, 0.8
   - type: HumanoidAppearance
     species: Tajaran
   - type: Fixtures
@@ -33,7 +32,6 @@
       60: 0.85  # 0.7 is base speed.
       80: 0.75  # 0.5 is base speed.
   - type: CESoftPaws # Mono: Cats usually land on their feet. At least, I think this is a cat.
-  - type: Carriable # Carrying system from nyanotrasen.
   - type: Butcherable
     butcheringType: Spike
     spawned:
@@ -54,8 +52,7 @@
     animation: WeaponArcClaw
     damage:
       types:
-        Slash: 4
-        Piercing: 1
+        Slash: 5
   - type: Speech
     speechVerb: Felinid
     speechSounds: Alto
@@ -86,7 +83,6 @@
       Male: MaleFelinid
       Female: FemaleFelinid
       Unsexed: MaleFelinid
-  - type: Felinid # real
   - type: NoShoesSilentFootsteps
   - type: LanguageKnowledge
     speaks:
@@ -121,12 +117,6 @@
       methods: [ Touch ]
       effects:
       - !type:WashCreamPieReaction
-    - reagents: [ Water ]
-      methods: [ Touch ]
-      effects:
-      - !type:Emote
-        emote: Scream
-        probability: 0.2
 
 - type: entity
   save: false
