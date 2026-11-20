@@ -47,7 +47,7 @@
   id: LeftLegTajaran
   name: left tajaran leg
   parent: [PartTajaran, BaseLeftLeg]
-  components:
+  components: #WOLFGATE: Tajarans no longer have felinid actions, and get a 5% boon to speed for their trouble.
     - type: MovementBodyPart
       sprintSpeed : 4.725
 
@@ -55,7 +55,7 @@
   id: RightLegTajaran
   name: right tajaran leg
   parent: [PartTajaran, BaseRightLeg]
-  components:
+  components: #WOLFGATE: Tajarans no longer have felinid actions, and get a 5% boon to speed for their trouble.
     - type: MovementBodyPart
       sprintSpeed : 4.725
 
